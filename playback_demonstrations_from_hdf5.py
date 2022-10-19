@@ -59,6 +59,7 @@ if __name__ == "__main__":
         has_offscreen_renderer=True,
         ignore_done=True,
         use_camera_obs=True,
+        use_object_obs=False,
         reward_shaping=True,
         control_freq=20,
     )
@@ -71,7 +72,7 @@ if __name__ == "__main__":
         print('Playing back episode {}... (press ESC to quit)'.format(ep))
 
         # # select an episode randomly
-        ep = random.choice(demos)
+        # ep = random.choice(demos)
 
         # read the model xml, using the metadata stored in the attribute for this episode
         model_xml = f["data/{}".format(ep)].attrs["model_file"]
@@ -94,7 +95,11 @@ if __name__ == "__main__":
             env.sim.forward()
 
             # load the actions and play them back open-loop
-            actions = np.array(f["data/{}/actions".format(ep)][()])
+            # actions = np.array(f["data/{}/actions".format(ep)][()])
+            # concatenate joint velocities and gripper actuations to form action space
+            joint_vel = np.array(f["data/{}/joint_velocities".format(ep)][()])
+            gripper_act = np.array(f["data/{}/gripper_actuations".format(ep)][()])
+            actions = np.concatenate((joint_vel, gripper_act), axis=1)
             num_actions = actions.shape[0]
 
             for j, action in enumerate(actions):
