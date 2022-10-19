@@ -1,0 +1,15 @@
+name: cs7643
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - numpy
+  - python>=3.6
+  - numpy
+  - pip
+  - h5py
+  - lockfile
+  - ffmpeg
+  - imageio
+  - imageio-ffmpeg
+  - tqdm
