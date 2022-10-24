@@ -4,6 +4,8 @@ import os
 import glob
 from pathlib import Path
 
+# example usage: python parse_video.py --folder RoboTurk_videos/bins-Bread/
+
 def vid_to_frames(fname):
     fname_base = Path(fname).stem
     try:

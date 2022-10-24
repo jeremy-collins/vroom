@@ -5,8 +5,7 @@ import os
 import h5py
 import numpy as np
 
-# import robosuite
-# from robosuite.utils.mjcf_utils import postprocess_model_xml
+# example usage: python parse_hdf5.py --folder RoboTurkPilot/bins-Bread/
 
 def get_joint_csv(demo_path):
     hdf5_path = os.path.join(demo_path, "demo.hdf5")
