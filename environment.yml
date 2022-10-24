@@ -13,3 +13,4 @@ dependencies:
   - imageio
   - imageio-ffmpeg
   - tqdm
+  - opencv
