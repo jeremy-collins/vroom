@@ -26,7 +26,7 @@ class Transformer(nn.Module):
 
         # LAYERS
         self.positional_encoder = PositionalEncoding(
-            dim_model=dim_model, dropout_p=dropout_p, max_len=6
+            dim_model=dim_model, dropout_p=dropout_p, max_len=64
         )
         # self.embedding = nn.Embedding(num_tokens, dim_model)
         self.embedding = nn.Linear(self.height * self.width * 4, dim_model)
@@ -37,7 +37,7 @@ class Transformer(nn.Module):
             num_decoder_layers=num_decoder_layers,
             dropout=dropout_p,
         )
-        self.out = nn.Linear(dim_model, self.height * self.width * 4)
+        self.out = nn.Linear(dim_model, 8)
         
     def forward(self, src, tgt, tgt_mask=None, src_pad_mask=None, tgt_pad_mask=None):
         
