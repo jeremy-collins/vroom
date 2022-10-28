@@ -1,11 +1,29 @@
 import argparse
 import os
-
+import glob
+from pathlib import Path
 
 import h5py
 import numpy as np
 
 # example usage: python parse_hdf5.py --folder RoboTurkPilot/bins-Bread/
+
+def separate_joint_csv(demo_path):
+    data_path = os.path.join(demo_path, 'jointdata')
+
+    os.chdir(data_path)
+    files = glob.glob('*.npy')
+    for file in files:
+        fname_base = Path(file).stem
+        try:
+            os.mkdir(fname_base)
+        except FileExistsError as error:
+            pass
+
+        dat = np.load(file)
+        for i in range(0, dat.shape[0]):
+            np.save(os.path.join(fname_base, 'frame_{:04d}.npy'.format(i)))
+
 
 def get_joint_csv(demo_path):
     hdf5_path = os.path.join(demo_path, "demo.hdf5")
@@ -36,9 +54,16 @@ if __name__ == "__main__":
         "--folder",
         type=str
     )
+    parser.add_argument(
+        '--separate',
+        action='store_true',
+    )
 
     args = parser.parse_args()
 
     demo_path = args.folder
 
-    get_joint_csv(demo_path)
+    if (args.separate):
+        separate_joint_csv(demo_path)
+    else:
+        get_joint_csv(demo_path)
