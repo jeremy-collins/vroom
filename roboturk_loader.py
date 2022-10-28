@@ -64,6 +64,7 @@ class RoboTurk(data.Dataset):
 
     def get_data(self, shuffle):
         img_names = []
+        joint_data = []
         dataset = []
         indices = []
 
@@ -74,10 +75,13 @@ class RoboTurk(data.Dataset):
                 parent = dir.split('/')[-1]
                 # (parent+index, name)
                 if file.endswith('.jpg'):
+                    parent_index = parent.split('_')[-1]
                     # img_names.append((int(parent+file[-7:-4]), os.path.join(dir, file)))
-                    img_names.append((int(parent[-1]+file[-6:-4]), os.path.join(dir, file)))
+                    img_names.append((int(parent_index+file[-7:-4]), os.path.join(dir, file)))
+                if file.endswith('.npy'):
+                    parent_index = parent.split('_')[-2]
+                    joint_data.append((int(parent_index+file[-7:-4]), os.path.join(dir, file)))
                     
-
         # sorting the names numerically. first 4 digits are folder and last 3 are file
         img_names = sorted(img_names, key=lambda x: x[0])
 
@@ -97,9 +101,8 @@ class RoboTurk(data.Dataset):
             indices.append(index_list) 
                 
             # each element is a list of frame names with length num_frames and skipping frames according to stride    
-            dataset.append(frame_names)
+            dataset.append(frame_names, joint_data[i][1])
             
-
         if shuffle:
             np.random.shuffle(dataset)
         else:

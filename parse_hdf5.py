@@ -22,7 +22,7 @@ def separate_joint_csv(demo_path):
 
         dat = np.load(file)
         for i in range(0, dat.shape[0]):
-            np.save(os.path.join(fname_base, 'frame_{:04d}.npy'.format(i)))
+            np.save(os.path.join(fname_base, 'frame_{:04d}.npy'.format(i)), dat[i])
 
 
 def get_joint_csv(demo_path):
