@@ -50,7 +50,7 @@ class Trainer():
         model.eval()
         total_loss = 0
         with torch.no_grad():
-            for j, (index_list, batch) in enumerate(tqdm(dataloader)):
+            for j, batch in enumerate(tqdm(dataloader)):
                 X = batch['data']
                 y_actual = batch['y']
 
