@@ -15,10 +15,10 @@ from PIL import Image, ImageDraw
 from roboturk_loader import RoboTurk
 
 class Trainer():
-    def __init__(self):
+    def __init__(self, frame_size=(64,64)):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print('device: ', self.device)
-        self.model = Seq2Vec(num_channels=3, num_kernels=64, kernel_size=(3,3), padding=(1,1), activation="relu", frame_size=(128,128), num_layers=3).to(self.device)
+        self.model = Seq2Vec(num_channels=3, num_kernels=64, kernel_size=(3,3), padding=(1,1), activation="relu", frame_size=frame_size, num_layers=3).to(self.device)
 
     def train_loop(self, model, opt, loss_fn, dataloader, frames_to_predict): # TODO: move encoding from dataloader to here
         model = model.to(self.device)
@@ -119,6 +119,7 @@ if __name__ == "__main__":
     epochs = 10
     lr = 0.00001
     num_workers = 0
+    frame_size = (64, 64)
 
     dim_model = 256
     num_heads = 8
@@ -126,17 +127,17 @@ if __name__ == "__main__":
     num_decoder_layers = 6
     dropout_p = 0.1
 
-    trainer = Trainer()
+    trainer = Trainer(frame_size=frame_size)
 
     model = trainer.model
     opt = optim.Adam(model.parameters(), lr=lr)
     loss_fn = nn.MSELoss() # TODO: change this to mse + condition + gradient difference
     if args.dataset == 'roboturk':
-        train_dataset = RoboTurk(num_frames=5, stride=stride, dir=args.folder, stage='train', shuffle=True)
+        train_dataset = RoboTurk(num_frames=5, stride=stride, dir=args.folder, stage='train', shuffle=True, frame_size=frame_size)
         train_sampler = RandomSampler(train_dataset, replacement=False, num_samples=int(len(train_dataset) * epoch_ratio))
         train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=False, sampler=train_sampler, num_workers=num_workers)
 
-        test_dataset = RoboTurk(num_frames=5, stride=stride, dir=args.folder, stage='test', shuffle=True)
+        test_dataset = RoboTurk(num_frames=5, stride=stride, dir=args.folder, stage='test', shuffle=True, frame_size=frame_size)
         test_sampler = RandomSampler(test_dataset, replacement=False, num_samples=int(len(test_dataset) * epoch_ratio))
         test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False, sampler=test_sampler, num_workers=num_workers)
 

@@ -12,11 +12,12 @@ import os
 import glob
 
 class RoboTurk(data.Dataset):
-    def __init__(self, num_frames=5, stride=1, dir='/media/jer/data/bouncing_ball_1000_1/test1_bouncing_ball', stage='raw', shuffle=True):
+    def __init__(self, num_frames=5, stride=1, dir='/media/jer/data/bouncing_ball_1000_1/test1_bouncing_ball', stage='raw', shuffle=True, frame_size=(64,64)):
         self.stage = stage
         self.dir = os.path.join(dir, stage)
         self.num_frames = num_frames
         self.stride = stride
+        self.frame_size = frame_size
         self.indices, self.dataset = self.get_data(shuffle=shuffle)
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         model = Transformer()
@@ -34,7 +35,7 @@ class RoboTurk(data.Dataset):
         frames=[]
         for frame_name in frame_names:
             frame = cv2.imread(frame_name)
-            frame = cv2.resize(frame, (128, 128))
+            frame = cv2.resize(frame, self.frame_size)
             # frame = self.transform(frame) # TODO: add transforms
 
         #     # check decoding
