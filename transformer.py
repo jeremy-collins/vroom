@@ -18,18 +18,16 @@ class Transformer(nn.Module):
     ):
         super().__init__()
 
-        # INFO
-        self.model_type = "Transformer"
         self.dim_model = dim_model
-        self.height = 8
-        self.width = 8
+        self.input_dim = 2048
 
         # LAYERS
         self.positional_encoder = PositionalEncoding(
             dim_model=dim_model, dropout_p=dropout_p, max_len=64
         )
         # self.embedding = nn.Embedding(num_tokens, dim_model)
-        self.embedding = nn.Linear(self.height * self.width * 4, dim_model)
+        self.embedding = nn.Linear(self.input_dim, dim_model)
+        self.upscale_gt = nn.Linear(8, dim_model)
         self.transformer = nn.Transformer(
             d_model=dim_model,
             nhead=num_heads,
@@ -46,7 +44,7 @@ class Transformer(nn.Module):
 
         # Embedding + positional encoding - Out size = (batch_size, sequence length, dim_model)
         src = self.embedding(src) * math.sqrt(self.dim_model)
-        tgt = self.embedding(tgt) * math.sqrt(self.dim_model)
+        tgt = self.upscale_gt(tgt) * math.sqrt(self.dim_model)
         src = self.positional_encoder(src)
         tgt = self.positional_encoder(tgt)
         
