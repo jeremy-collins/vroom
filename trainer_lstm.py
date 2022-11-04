@@ -35,6 +35,8 @@ class Trainer():
             y_actual = y_actual.clone().detach().to(self.device)
 
             pred = model(X)
+            print(pred.shape)
+            print(y_actual.shape)
 
             loss = loss_fn(y_actual, pred)
 

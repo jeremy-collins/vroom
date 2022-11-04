@@ -16,7 +16,8 @@ def predict(model, input_sequence, max_length=5):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # y_input = torch.tensor([[SOS_token]], dtype=torch.long, device=device)
     # y_input = torch.ones((1, model.dim_model), dtype=torch.float32, device=device) * 2 # SOS token
-    SOS_token = torch.ones((1, 1, model.dim_model), dtype=torch.float32, device=device) * 2
+    # SOS_token = torch.ones((1, 1, model.dim_model), dtype=torch.float32, device=device) * -100
+    SOS_token = torch.ones((1, 1, 2048), dtype=torch.float32, device=device) * -100
     EOS_token = torch.ones((1, 1, model.dim_model), dtype=torch.float32, device=device) * 3
     # y_input = torch.tensor([SOS_token], dtype=torch.float32, device=device)
     y_input = SOS_token
@@ -26,6 +27,8 @@ def predict(model, input_sequence, max_length=5):
         # for _ in range(6):
         # for _ in range(max_length):
         y_input = torch.cat((SOS_token, input_sequence), dim=1) # TODO: change input_sequence to have dim 256
+        y_input = model.embedding(y_input)
+        print('new y_input size: ', y_input.size())
         # Get target mask
         tgt_mask = model.get_tgt_mask(y_input.size(1)).to(device)
         
@@ -33,21 +36,21 @@ def predict(model, input_sequence, max_length=5):
         
         # Permute pred to have batch size first again
         pred = pred.permute(1, 0, 2)
-        # new shape: (batch_size, seq_len, dim_model)
+        # # new shape: (batch_size, seq_len, dim_model)
         
-        # X shape is (batch_size, src sequence length, input.shape)
-        # y_input shape is (batch_size, tgt sequence length, input.shape)
+        # # X shape is (batch_size, src sequence length, input.shape)
+        # # y_input shape is (batch_size, tgt sequence length, input.shape)
     
-        # next item is the last item in the predicted sequence
-        next_item = pred[:,-1,:].unsqueeze(1)
-        # next_item = torch.tensor([[next_item]], device=device)
+        # # next item is the last item in the predicted sequence
+        # next_item = pred[:,-1,:].unsqueeze(1)
+        # # next_item = torch.tensor([[next_item]], device=device)
 
-        # Concatenate previous input with prediction
-        y_input = torch.cat((y_input, next_item), dim=1)
+        # # Concatenate previous input with prediction
+        # y_input = torch.cat((y_input, next_item), dim=1)
 
-        # Stop if model predicts end of sentence
-        # if next_item.view(-1).item() == EOS_token:
-        #     break
+        # # Stop if model predicts end of sentence
+        # # if next_item.view(-1).item() == EOS_token:
+        # #     break
 
     # return y_input.view(-1).tolist()
     # return pred[0,0].view(-1).tolist()
@@ -99,25 +102,30 @@ if __name__ == "__main__":
             X_emb = X_emb.squeeze(3)
             X_emb = X_emb.squeeze(3)
 
-            for idx, input in enumerate(X_emb.squeeze(0)): # for each input frame
-                if idx == 0:
-                        continue # SOS token
-                else:
-                    inputs = torch.cat((inputs, input.unsqueeze(0).unsqueeze(0)), dim=1)
-                    print('inputs shape: ', inputs.shape)
+            pred = predict(model, X_emb)
 
-            for iteration in range(args.pred_frames):
-                pred = predict(model, X_emb)
-                pred = torch.tensor(pred, dtype=torch.float32, device=device)
-                preds = torch.cat((preds, pred.unsqueeze(0).unsqueeze(0)), dim=1)
-                print('preds shape: ', pred.shape)
-                all_latents = torch.cat([inputs[:,:-1], preds], dim=1)
-                X_emb = all_latents[:, -5:] # the next input is the last 5 frames of the concatenated inputs and preds
-                print('X after modifying: ', X_emb.shape)
+            print('pred: ', pred)
+            print('y: ', y[0, -1])
 
-            if args.show:
-                for latent in all_latents.squeeze(0):
-                    print('latent:', latent)
+            # for idx, input in enumerate(X_emb.squeeze(0)): # for each input frame
+            #     if idx == 0:
+            #             continue # SOS token
+            #     else:
+            #         inputs = torch.cat((inputs, input.unsqueeze(0).unsqueeze(0)), dim=1)
+            #         print('inputs shape: ', inputs.shape)
+
+            # for iteration in range(args.pred_frames):
+            #     pred = predict(model, X_emb)
+            #     pred = torch.tensor(pred, dtype=torch.float32, device=device)
+            #     preds = torch.cat((preds, pred.unsqueeze(0).unsqueeze(0)), dim=1)
+            #     print('preds shape: ', pred.shape)
+            #     all_latents = torch.cat([inputs[:,:-1], preds], dim=1)
+            #     X_emb = all_latents[:, -5:] # the next input is the last 5 frames of the concatenated inputs and preds
+            #     print('X after modifying: ', X_emb.shape)
+
+            # if args.show:
+            #     for latent in all_latents.squeeze(0):
+            #         print('latent:', latent)
 
 
     #     # counting number of files in ./checkpoints

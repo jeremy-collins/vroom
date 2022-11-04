@@ -27,7 +27,6 @@ class Transformer(nn.Module):
         )
         # self.embedding = nn.Embedding(num_tokens, dim_model)
         self.embedding = nn.Linear(self.input_dim, dim_model)
-        self.upscale_gt = nn.Linear(8, dim_model)
         self.transformer = nn.Transformer(
             d_model=dim_model,
             nhead=num_heads,
@@ -44,7 +43,7 @@ class Transformer(nn.Module):
 
         # Embedding + positional encoding - Out size = (batch_size, sequence length, dim_model)
         src = self.embedding(src) * math.sqrt(self.dim_model)
-        tgt = self.upscale_gt(tgt) * math.sqrt(self.dim_model)
+        tgt = self.embedding(tgt) * math.sqrt(self.dim_model)
         src = self.positional_encoder(src)
         tgt = self.positional_encoder(tgt)
         

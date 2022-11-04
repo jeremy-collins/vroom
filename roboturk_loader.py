@@ -66,7 +66,7 @@ class RoboTurk(data.Dataset):
             joints = joints.float()
             jointdata.append(joints)
 
-        jointdata = torch.stack(jointdata, dim=0)
+        jointdata = torch.stack(jointdata, dim=0) # bs, seq_len, 8
             # jointdata = np.load(self.dataset[index][1])
             # jointdata = torch.from_numpy(jointdata).float()
 

@@ -39,17 +39,9 @@ class Trainer():
         total_loss = 0
             
         for i, batch in enumerate(tqdm(dataloader)):
-            # X, y = batch[:, 0], batch[:, 1]
-            
-            # X = batch[:, :-1]
-            # y = batch[:,-1].unsqueeze(1)
-
             X = batch['data']
-            y = batch['y']
-
             X = torch.tensor(X).to(self.device)
-            y = torch.tensor(y).to(self.device)
-            
+
             X_emb = []
             for clip in X:
                 # encode image
@@ -59,15 +51,22 @@ class Trainer():
             X_emb = torch.stack(X_emb)
             X_emb = X_emb.squeeze(3)
             X_emb = X_emb.squeeze(3)
-            
 
+            # y = batch['y']
+            y = X_emb # because the target needs to be in the same vector space as the input.
+                      # we will predict a linear projection of the next embedding (see self.out in transformer.py)
+
+            y = torch.tensor(y).to(self.device)
+            
             # y_input = y
             # y_expected = y
             
             # shift the tgt by one so we always predict the next embedding
             y_input = y[:,:-1] # all but last 
             # y_input = y # because we don't have an EOS token
-            y_expected = y[:,1:] # all but first because the prediction is shifted by one
+            # y_expected = y[:,1:] # all but first because the prediction is shifted by one
+            y_expected = batch['y'][:,1:] # all but first joint values
+            y_expected = torch.tensor(y_expected).to(self.device)
             
             y_expected = y_expected.reshape(y_expected.shape[0], y_expected.shape[1], -1)
             y_expected = y_expected.permute(1, 0, 2)
@@ -88,16 +87,11 @@ class Trainer():
             # pred = pred.permute(1, 2, 0)
             
             # loss = loss_fn(pred[-1], y_expected[-1])
+            # loss = loss_fn(pred[-frames_to_predict:], y_expected[-frames_to_predict:])
+            
+            # emb_to_joints = model_dim -> 8, to compare with ground truth
             loss = loss_fn(pred[-frames_to_predict:], y_expected[-frames_to_predict:])
-
-            # # check decoding
-            # print('pred shape: ', pred.shape)
-            # print('y_expected shape: ', y_expected.shape)
-            # gt = y_expected[-1][0].reshape((1, 4, 8, 8)) # last frame, first batch
-            # gt_reconstruction = sd_utils.decode_img_latents(gt)
-            # gt_reconstruction = np.array(gt_reconstruction[0])
-            # cv2.imshow('gt_reconstruction', gt_reconstruction)
-            # cv2.waitKey(0)
+            # print(pred[-frames_to_predict:].shape, y_expected[-frames_to_predict:].shape)
 
             opt.zero_grad()
             loss.backward()
@@ -112,17 +106,9 @@ class Trainer():
         total_loss = 0
         with torch.no_grad():
             for i, batch in enumerate(tqdm(dataloader)):
-                # X, y = batch[:, 0], batch[:, 1]
-                
-                # X = batch[:, :-1]
-                # y = batch[:,-1].unsqueeze(1)
-
                 X = batch['data']
-                y = batch['y']
-
                 X = torch.tensor(X).to(self.device)
-                y = torch.tensor(y).to(self.device)
-                
+
                 X_emb = []
                 for clip in X:
                     # encode image
@@ -132,15 +118,22 @@ class Trainer():
                 X_emb = torch.stack(X_emb)
                 X_emb = X_emb.squeeze(3)
                 X_emb = X_emb.squeeze(3)
-                
 
+                # y = batch['y']
+                y = X_emb # because the target needs to be in the same vector space as the input.
+                        # we will predict a linear projection of the next embedding (see self.out in transformer.py)
+
+                y = torch.tensor(y).to(self.device)
+                
                 # y_input = y
                 # y_expected = y
                 
                 # shift the tgt by one so we always predict the next embedding
                 y_input = y[:,:-1] # all but last 
                 # y_input = y # because we don't have an EOS token
-                y_expected = y[:,1:] # all but first because the prediction is shifted by one
+                # y_expected = y[:,1:] # all but first because the prediction is shifted by one
+                y_expected = batch['y'][:,1:] # all but first joint values
+                y_expected = torch.tensor(y_expected).to(self.device)
                 
                 y_expected = y_expected.reshape(y_expected.shape[0], y_expected.shape[1], -1)
                 y_expected = y_expected.permute(1, 0, 2)
@@ -156,13 +149,16 @@ class Trainer():
                 # print('y_input shape: ', y_input.shape)
 
                 pred = model(X_emb, y_input, tgt_mask)
-                # pred = None
-
+                
                 # Permute pred to have batch size first again
                 # pred = pred.permute(1, 2, 0)
                 
                 # loss = loss_fn(pred[-1], y_expected[-1])
+                # loss = loss_fn(pred[-frames_to_predict:], y_expected[-frames_to_predict:])
+                
+                # emb_to_joints = model_dim -> 8, to compare with ground truth
                 loss = loss_fn(pred[-frames_to_predict:], y_expected[-frames_to_predict:])
+                # print(pred[-frames_to_predict:].shape, y_expected[-frames_to_predict:].shape)
 
                 total_loss += loss.detach().item()
             
@@ -217,10 +213,10 @@ if __name__ == "__main__":
     frames_to_predict = 5 # must be <= frames_per_clip
     stride = 1 # number of frames to shift when loading clips
     batch_size = 32
-    epoch_ratio = 0.001 # to sample just a portion of the dataset
+    epoch_ratio = 1 # to sample just a portion of the dataset
     epochs = 10
     lr = 0.00001
-    num_workers = 0
+    num_workers = 8
 
     dim_model = 256
     num_heads = 8
