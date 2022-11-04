@@ -9,7 +9,8 @@ import numpy as np
 # example usage: python parse_hdf5.py --folder RoboTurkPilot/bins-Bread/
 
 def separate_joint_csv(demo_path):
-    data_path = os.path.join(demo_path, 'jointdata')
+    # data_path = os.path.join(demo_path, 'jointdata')
+    data_path = os.path.join(demo_path, 'actions')
 
     os.chdir(data_path)
     files = glob.glob('*.npy')

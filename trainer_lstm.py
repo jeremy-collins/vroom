@@ -35,10 +35,9 @@ class Trainer():
             y_actual = y_actual.clone().detach().to(self.device)
 
             pred = model(X)
-            print(pred.shape)
-            print(y_actual.shape)
 
-            loss = loss_fn(y_actual, pred)
+            # loss = loss_fn(y_actual, pred)
+            loss = loss_fn(y_actual[:,-1], pred)
 
             opt.zero_grad()
             loss.backward()
@@ -62,7 +61,8 @@ class Trainer():
 
                 pred = model(X)
 
-                loss = loss_fn(y_actual, pred)
+                # loss = loss_fn(y_actual, pred)
+                loss = loss_fn(y_actual[:,-1], pred)
 
                 total_loss += loss.detach().item()
 
@@ -120,7 +120,7 @@ if __name__ == "__main__":
     epoch_ratio = 1 # to sample just a portion of the dataset
     epochs = 10
     lr = 0.00001
-    num_workers = 0
+    num_workers = 4
     frame_size = (64, 64)
 
     dim_model = 256

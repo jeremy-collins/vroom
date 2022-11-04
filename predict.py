@@ -14,21 +14,22 @@ from utils import Utils
 def predict(model, input_sequence, max_length=5):
     model.eval()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    # y_input = torch.tensor([[SOS_token]], dtype=torch.long, device=device)
-    # y_input = torch.ones((1, model.dim_model), dtype=torch.float32, device=device) * 2 # SOS token
-    # SOS_token = torch.ones((1, 1, model.dim_model), dtype=torch.float32, device=device) * -100
-    SOS_token = torch.ones((1, 1, 2048), dtype=torch.float32, device=device) * -100
+    SOS_token = torch.ones((1, 1, model.dim_model), dtype=torch.float32, device=device) * -100
+    SOS_token = SOS_token.repeat(input_sequence.shape[0], 1, 1) # repeat SOS token for batch
     EOS_token = torch.ones((1, 1, model.dim_model), dtype=torch.float32, device=device) * 3
-    # y_input = torch.tensor([SOS_token], dtype=torch.float32, device=device)
-    y_input = SOS_token
+
+    input_sequence = torch.cat((SOS_token, input_sequence), dim=1)
+
+    y_input = input_sequence[:,:-1] # all but last
     
     # num_tokens = len(input_sequence[0])
     with torch.no_grad():
         # for _ in range(6):
         # for _ in range(max_length):
-        y_input = torch.cat((SOS_token, input_sequence), dim=1) # TODO: change input_sequence to have dim 256
-        y_input = model.embedding(y_input)
-        print('new y_input size: ', y_input.size())
+        print('y_input.shape: ', y_input.shape)
+        print('SOS_token.shape: ', SOS_token.shape)
+        # y_input = torch.cat((SOS_token, input_sequence), dim=1)
+
         # Get target mask
         tgt_mask = model.get_tgt_mask(y_input.size(1)).to(device)
         
@@ -72,8 +73,8 @@ if __name__ == "__main__":
     model.eval()
     model = model.to(device)
     
-    utils = Utils()
-    utils.init_resnet()
+    # utils = Utils()
+    # utils.init_resnet()
     
     test_dataset = RoboTurk(num_frames=5, stride=1, dir=args.folder, stage='test', shuffle=True)
     
@@ -91,21 +92,26 @@ if __name__ == "__main__":
             # shift the tgt by one so with the <SOS> we predict the token at pos 1
             y = torch.tensor(y[:,:-1], dtype=torch.float32, device=device)
 
-            X_emb = []
-            for clip in X:
-                # encode image
-                emb = utils.encode_img(clip)
-                X_emb.append(emb)
+            # X_emb = []
+            # for clip in X:
+            #     # encode image
+            #     emb = utils.encode_img(clip)
+            #     X_emb.append(emb)
 
-            X_emb = torch.stack(X_emb)
+            # X_emb = torch.stack(X_emb)
 
-            X_emb = X_emb.squeeze(3)
-            X_emb = X_emb.squeeze(3)
+            # X_emb = X_emb.squeeze(3)
+            # X_emb = X_emb.squeeze(3)
 
-            pred = predict(model, X_emb)
+            # X_emb = model.embedding(X_emb)
 
-            print('pred: ', pred)
-            print('y: ', y[0, -1])
+            # print('X_emb size: ', X_emb.size())
+
+            # pred = predict(model, X_emb)
+            pred = model(X)
+
+            print('pred: ', pred[-1])
+            print('y: ', batch['y'] [0, -1])
 
             # for idx, input in enumerate(X_emb.squeeze(0)): # for each input frame
             #     if idx == 0:

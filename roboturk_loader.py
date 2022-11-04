@@ -39,11 +39,9 @@ class RoboTurk(data.Dataset):
             frame = cv2.resize(frame, self.frame_size)
             # frame = self.transform(frame) # TODO: add transforms
 
-        #     # check decoding
-        #     # reconstruction = self.sd_utils.decode_img_latents(frame)
-        #     # reconstruction = np.array(reconstruction[0])
-        #     # cv2.imshow('reconstruction', reconstruction)
-        #     # cv2.waitKey(0)
+            # # view image
+            # cv2.imshow('frame', frame)
+            # cv2.waitKey(0)
 
             # frame = frame.squeeze(0)
             frame = torch.from_numpy(frame)
@@ -138,8 +136,8 @@ class RoboTurk(data.Dataset):
 
 
 if __name__ == '__main__':
-    # dataset = RoboTurk(num_frames=5, stride=1, dir='data/RoboTurk_videos/bins-Bread', stage='train', shuffle=True)
-    dataset = RoboTurk(num_frames=5, stride=1, dir='/media/jer/Crucial X6/data/RoboTurk_videos/bins-Bread', stage='train', shuffle=True)
+    dataset = RoboTurk(num_frames=5, stride=10, dir='data/RoboTurk_videos/bins-Bread', stage='train', shuffle=True)
+    # dataset = RoboTurk(num_frames=5, stride=1, dir='/media/jer/Crucial X6/data/RoboTurk_videos/bins-Bread', stage='train', shuffle=True)
     # test_sampler = RandomSampler(dataset, replacement=False, num_samples=int(len(dataset) * 0.001))
     # test_loader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False, sampler=test_sampler, num_workers=0)
 
@@ -148,8 +146,9 @@ if __name__ == '__main__':
         print('clip ', i)
         print("clips in the dataset: ", len(dataset.dataset))
         # print('clip length: ', len(dataset[0]))
-        print('frame shape: ', dataset[0]['data'].shape)
-        print('joint shape: ', dataset[0]['y'].shape)
+        print('dataset: ', dataset[i])
+        print('frame shape: ', dataset[i]['data'].shape)
+        print('joint shape: ', dataset[i]['y'].shape)
         frames = dataset[i]['data']
         jointdata = dataset[i]['y']
         for i, frame in enumerate(frames):

@@ -19,10 +19,9 @@ class Trainer():
     def __init__(self):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print('device: ', self.device)
-        model = Transformer()
-        self.SOS_token = torch.ones((1, model.dim_model), dtype=torch.float32, device=self.device) * 2
-        self.utils = Utils()
-        self.utils.init_resnet()
+        # self.utils = Utils()
+        # self.utils.init_resnet()
+        # self.utils.init_resnet(freeze=False)
             
     # def encode_img(self, img):
     #     # input image into CNN
@@ -42,56 +41,21 @@ class Trainer():
             X = batch['data']
             X = torch.tensor(X).to(self.device)
 
-            X_emb = []
-            for clip in X:
-                # encode image
-                emb = self.utils.encode_img(clip)
-                X_emb.append(emb)
-
-            X_emb = torch.stack(X_emb)
-            X_emb = X_emb.squeeze(3)
-            X_emb = X_emb.squeeze(3)
-
-            # y = batch['y']
-            y = X_emb # because the target needs to be in the same vector space as the input.
-                      # we will predict a linear projection of the next embedding (see self.out in transformer.py)
-
+            y = batch['y']
             y = torch.tensor(y).to(self.device)
-            
-            # y_input = y
-            # y_expected = y
-            
-            # shift the tgt by one so we always predict the next embedding
-            y_input = y[:,:-1] # all but last 
-            # y_input = y # because we don't have an EOS token
-            # y_expected = y[:,1:] # all but first because the prediction is shifted by one
-            y_expected = batch['y'][:,1:] # all but first joint values
-            y_expected = torch.tensor(y_expected).to(self.device)
-            
-            y_expected = y_expected.reshape(y_expected.shape[0], y_expected.shape[1], -1)
-            y_expected = y_expected.permute(1, 0, 2)
-            
-            # Get mask to mask out the future frames
-            sequence_length = y_input.size(1)
-            tgt_mask = model.get_tgt_mask(sequence_length).to(self.device)
-        
-            # X shape is (batch_size, src sequence length, input.shape)
-            # y_input shape is (batch_size, tgt sequence length, input.shape)
-            
-            # print('X_emb shape: ', X_emb.shape)
-            # print('y_input shape: ', y_input.shape)
 
-            pred = model(X_emb, y_input, tgt_mask)
-            
-            # Permute pred to have batch size first again
-            # pred = pred.permute(1, 2, 0)
-            
-            # loss = loss_fn(pred[-1], y_expected[-1])
-            # loss = loss_fn(pred[-frames_to_predict:], y_expected[-frames_to_predict:])
-            
-            # emb_to_joints = model_dim -> 8, to compare with ground truth
+            pred = model(X)
+
+            y_expected = batch['y']
+
+            y_expected = torch.tensor(y_expected).to(self.device)
+            y_expected = y_expected.permute(1, 0, 2)
+
+            # model.out = model_dim -> 8, to compare with ground truth
+            # pred is sequence of next projected embeddings, y_expected is sequence of ground truth joint velocities 
             loss = loss_fn(pred[-frames_to_predict:], y_expected[-frames_to_predict:])
             # print(pred[-frames_to_predict:].shape, y_expected[-frames_to_predict:].shape)
+            # print(pred[-frames_to_predict:, 0], y_expected[-frames_to_predict:, 0])
 
             opt.zero_grad()
             loss.backward()
@@ -109,54 +73,20 @@ class Trainer():
                 X = batch['data']
                 X = torch.tensor(X).to(self.device)
 
-                X_emb = []
-                for clip in X:
-                    # encode image
-                    emb = self.utils.encode_img(clip)
-                    X_emb.append(emb)
-
-                X_emb = torch.stack(X_emb)
-                X_emb = X_emb.squeeze(3)
-                X_emb = X_emb.squeeze(3)
-
-                # y = batch['y']
-                y = X_emb # because the target needs to be in the same vector space as the input.
-                        # we will predict a linear projection of the next embedding (see self.out in transformer.py)
-
+                y = batch['y']
                 y = torch.tensor(y).to(self.device)
-                
-                # y_input = y
-                # y_expected = y
-                
-                # shift the tgt by one so we always predict the next embedding
-                y_input = y[:,:-1] # all but last 
-                # y_input = y # because we don't have an EOS token
-                # y_expected = y[:,1:] # all but first because the prediction is shifted by one
-                y_expected = batch['y'][:,1:] # all but first joint values
+
+                pred = model(X)
+
+                y_expected = batch['y']
+
                 y_expected = torch.tensor(y_expected).to(self.device)
                 
                 y_expected = y_expected.reshape(y_expected.shape[0], y_expected.shape[1], -1)
                 y_expected = y_expected.permute(1, 0, 2)
                 
-                # Get mask to mask out the future frames
-                sequence_length = y_input.size(1)
-                tgt_mask = model.get_tgt_mask(sequence_length).to(self.device)
-            
-                # X shape is (batch_size, src sequence length, input.shape)
-                # y_input shape is (batch_size, tgt sequence length, input.shape)
-                
-                # print('X_emb shape: ', X_emb.shape)
-                # print('y_input shape: ', y_input.shape)
-
-                pred = model(X_emb, y_input, tgt_mask)
-                
-                # Permute pred to have batch size first again
-                # pred = pred.permute(1, 2, 0)
-                
-                # loss = loss_fn(pred[-1], y_expected[-1])
-                # loss = loss_fn(pred[-frames_to_predict:], y_expected[-frames_to_predict:])
-                
-                # emb_to_joints = model_dim -> 8, to compare with ground truth
+                # model.out = model_dim -> 8, to compare with ground truth
+                # pred is sequence of next projected embeddings, y_expected is sequence of ground truth joint velocities 
                 loss = loss_fn(pred[-frames_to_predict:], y_expected[-frames_to_predict:])
                 # print(pred[-frames_to_predict:].shape, y_expected[-frames_to_predict:].shape)
 
@@ -205,6 +135,9 @@ if __name__ == "__main__":
     parser.add_argument('--save_best', type=bool, default=False) # only save best model
     parser.add_argument('--folder', type=str, required=True) # dataset location
     parser.add_argument('--name', type=str, required=True) # name of the model
+    parser.add_argument('--freeze_resnet', type=bool, default=False) # freeze resnet weights
+
+
     args = parser.parse_args()
     
     # torch.multiprocessing.set_start_method('spawn')
@@ -218,7 +151,7 @@ if __name__ == "__main__":
     lr = 0.00001
     num_workers = 8
 
-    dim_model = 256
+    dim_model = 2048
     num_heads = 8
     num_encoder_layers = 6
     num_decoder_layers = 6
@@ -226,7 +159,7 @@ if __name__ == "__main__":
 
     trainer = Trainer()
     
-    model = Transformer(num_tokens=0, dim_model=dim_model, num_heads=num_heads, num_encoder_layers=num_encoder_layers, num_decoder_layers=num_decoder_layers, dropout_p=dropout_p)
+    model = Transformer(dim_model=dim_model, num_heads=num_heads, num_encoder_layers=num_encoder_layers, num_decoder_layers=num_decoder_layers, dropout_p=dropout_p, freeze_resnet=args.freeze_resnet)
     opt = optim.Adam(model.parameters(), lr=lr)
     loss_fn = nn.MSELoss() # TODO: change this to mse + condition + gradient difference
     if args.dataset == 'roboturk':
