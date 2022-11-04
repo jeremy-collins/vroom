@@ -10,6 +10,7 @@ import argparse
 import cv2
 import os
 import glob
+from torch.utils.data import DataLoader, RandomSampler
 
 class RoboTurk(data.Dataset):
     def __init__(self, num_frames=5, stride=1, dir='/media/jer/data/bouncing_ball_1000_1/test1_bouncing_ball', stage='raw', shuffle=True, frame_size=(224,224)):
@@ -137,7 +138,10 @@ class RoboTurk(data.Dataset):
 
 
 if __name__ == '__main__':
-    dataset = RoboTurk(num_frames=5, stride=1, dir='data/RoboTurk_videos/bins-Bread', stage='train', shuffle=True)
+    # dataset = RoboTurk(num_frames=5, stride=1, dir='data/RoboTurk_videos/bins-Bread', stage='train', shuffle=True)
+    dataset = RoboTurk(num_frames=5, stride=1, dir='/media/jer/Crucial X6/data/RoboTurk_videos/bins-Bread', stage='train', shuffle=True)
+    # test_sampler = RandomSampler(dataset, replacement=False, num_samples=int(len(dataset) * 0.001))
+    # test_loader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False, sampler=test_sampler, num_workers=0)
 
     for i in range(10):
         print('dir: ', dataset.dir)

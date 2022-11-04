@@ -11,6 +11,7 @@ import os
 from tqdm import tqdm
 import cv2
 from PIL import Image, ImageDraw
+from utils import Utils
 
 from roboturk_loader import RoboTurk
 
@@ -20,22 +21,16 @@ class Trainer():
         print('device: ', self.device)
         model = Transformer()
         self.SOS_token = torch.ones((1, model.dim_model), dtype=torch.float32, device=self.device) * 2
-        self.resnet50 = torch.hub.load('pytorch/vision:v0.6.0', 'resnet50', pretrained=True)
-        # remove last layer
-        self.resnet50 = nn.Sequential(*list(self.resnet50.children())[:-1])
-        self.resnet50.to(self.device)
-        self.resnet50.eval()
-        # freeze resnet50
-        for param in self.resnet50.parameters():
-            param.requires_grad = False
+        self.utils = Utils()
+        self.utils.init_resnet()
             
-    def encode_img(self, img):
-        # input image into CNN
-        # img = np.array(img, dtype=np.float32)
-        # img = cv2.resize(img, (224, 224))
-        latents = self.resnet50(img)
-        # img = torch.tensor(latents).to(self.device)
-        return latents
+    # def encode_img(self, img):
+    #     # input image into CNN
+    #     # img = np.array(img, dtype=np.float32)
+    #     # img = cv2.resize(img, (224, 224))
+    #     latents = self.resnet50(img)
+    #     # img = torch.tensor(latents).to(self.device)
+    #     return latents
         
 
     def train_loop(self, model, opt, loss_fn, dataloader, frames_to_predict):
@@ -58,7 +53,7 @@ class Trainer():
             X_emb = []
             for clip in X:
                 # encode image
-                emb = self.encode_img(clip)
+                emb = self.utils.encode_img(clip)
                 X_emb.append(emb)
 
             X_emb = torch.stack(X_emb)
@@ -131,7 +126,7 @@ class Trainer():
                 X_emb = []
                 for clip in X:
                     # encode image
-                    emb = self.encode_img(clip)
+                    emb = self.utils.encode_img(clip)
                     X_emb.append(emb)
 
                 X_emb = torch.stack(X_emb)

@@ -4,12 +4,12 @@ import torch.optim as optim
 import math
 import numpy as np
 from transformer import Transformer
-from bouncing_ball_loader import BouncingBall
-from sd_utils import SDUtils
+from roboturk_loader import RoboTurk
 import PIL
 import cv2
 import os
 import argparse
+from utils import Utils
 
 def predict(model, input_sequence, max_length=5):
     model.eval()
@@ -25,7 +25,7 @@ def predict(model, input_sequence, max_length=5):
     with torch.no_grad():
         # for _ in range(6):
         # for _ in range(max_length):
-        y_input = torch.cat((SOS_token, input_sequence), dim=1)
+        y_input = torch.cat((SOS_token, input_sequence), dim=1) # TODO: change input_sequence to have dim 256
         # Get target mask
         tgt_mask = model.get_tgt_mask(y_input.size(1)).to(device)
         
@@ -63,34 +63,43 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     
-    sd_utils = SDUtils()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = Transformer()
     model.load_state_dict(torch.load('./checkpoints/model_' + str(args.index) + '.pt'))
     model.eval()
     model = model.to(device)
     
-    # test_dataset = BouncingBall(num_frames=5, stride=1, dir='/media/jer/data/bouncing_ball_1000_1/test1_bouncing_ball', stage='test', shuffle=True)
-    # test_dataset = BouncingBall(num_frames=5, stride=1, dir='/media/jer/data/bouncing_ball_1000_blackwhite1/content/2D-bouncing/test3_bouncing_ball', stage='test', shuffle=True)
-    # test_dataset = BouncingBall(num_frames=5, stride=1, dir='/media/jer/data/tccvg/bouncing_ball_3000_blackwhite_simple1/content/2D-bouncing/test2_simple_bouncing_ball', stage='test', shuffle=True)
-    test_dataset = BouncingBall(num_frames=5, stride=1, dir=args.folder, stage='test', shuffle=True)
+    utils = Utils()
+    utils.init_resnet()
+    
+    test_dataset = RoboTurk(num_frames=5, stride=1, dir=args.folder, stage='test', shuffle=True)
     
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1, shuffle=True)
     
     with torch.no_grad():
-        for index_list, batch in test_loader:
+        for i, batch in enumerate(test_loader):
             inputs = torch.tensor([], device=device)
             preds = torch.tensor([], device=device)
-            X = batch
-            y = batch
+            X = batch['data']
+            y = batch['y']
 
             X = torch.tensor(X, dtype=torch.float32, device=device)
 
             # shift the tgt by one so with the <SOS> we predict the token at pos 1
             y = torch.tensor(y[:,:-1], dtype=torch.float32, device=device)
 
+            X_emb = []
+            for clip in X:
+                # encode image
+                emb = utils.encode_img(clip)
+                X_emb.append(emb)
 
-            for idx, input in enumerate(X.squeeze(0)): # for each input frame
+            X_emb = torch.stack(X_emb)
+
+            X_emb = X_emb.squeeze(3)
+            X_emb = X_emb.squeeze(3)
+
+            for idx, input in enumerate(X_emb.squeeze(0)): # for each input frame
                 if idx == 0:
                         continue # SOS token
                 else:
@@ -98,24 +107,17 @@ if __name__ == "__main__":
                     print('inputs shape: ', inputs.shape)
 
             for iteration in range(args.pred_frames):
-                pred = predict(model, X)
+                pred = predict(model, X_emb)
                 pred = torch.tensor(pred, dtype=torch.float32, device=device)
                 preds = torch.cat((preds, pred.unsqueeze(0).unsqueeze(0)), dim=1)
                 print('preds shape: ', pred.shape)
                 all_latents = torch.cat([inputs[:,:-1], preds], dim=1)
-                X = all_latents[:, -5:] # the next input is the last 5 frames of the concatenated inputs and preds
-                print('X after modifying: ', X.shape)
+                X_emb = all_latents[:, -5:] # the next input is the last 5 frames of the concatenated inputs and preds
+                print('X after modifying: ', X_emb.shape)
 
             if args.show:
                 for latent in all_latents.squeeze(0):
-                    latent = latent.reshape((1, 4, 8, 8))
-                    img = sd_utils.decode_img_latents(latent)
-                    # img_path = os.path.join('./images', str(folder_index), str(index_list[idx - 1].item()) + '_gt.png')
-                    # input_img[0].save(img_path)
-                    cv2.namedWindow('frame', cv2.WND_PROP_FULLSCREEN)
-                    cv2.setWindowProperty('frame', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
-                    cv2.imshow('frame', np.array(img[0]))
-                    cv2.waitKey(0)
+                    print('latent:', latent)
 
 
     #     # counting number of files in ./checkpoints
