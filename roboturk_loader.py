@@ -165,6 +165,7 @@ if __name__ == '__main__':
     # print('avg joints: ', torch.mean(joints, dim=0))
 
     print(dataset)
+    
 
     for i in range(10):
         print('dir: ', dataset.dir)
