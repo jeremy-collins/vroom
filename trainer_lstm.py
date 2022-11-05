@@ -12,7 +12,7 @@ from tqdm import tqdm
 import cv2
 from PIL import Image, ImageDraw
 
-from roboturk_loader import RoboTurk
+from roboturk_loader_lstm import RoboTurk
 
 class Trainer():
     def __init__(self, frame_size=(128,128)):
