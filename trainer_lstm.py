@@ -15,7 +15,7 @@ from PIL import Image, ImageDraw
 from roboturk_loader import RoboTurk
 
 class Trainer():
-    def __init__(self, frame_size=(64,64)):
+    def __init__(self, frame_size=(128,128)):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print('device: ', self.device)
         self.model = Seq2Vec(num_channels=3, num_kernels=64, kernel_size=(3,3), padding=(1,1), activation="relu", frame_size=frame_size, num_layers=3).to(self.device)
@@ -115,13 +115,13 @@ if __name__ == "__main__":
 
     frames_per_clip = 5
     frames_to_predict = 5
-    stride = 1 # number of frames to shift when loading clips
-    batch_size = 32
-    epoch_ratio = 1 # to sample just a portion of the dataset
+    stride = 15 # number of frames to shift when loading clips
+    batch_size = 8
+    epoch_ratio = 0.25 # to sample just a portion of the dataset
     epochs = 10
-    lr = 0.00001
-    num_workers = 4
-    frame_size = (64, 64)
+    lr = 0.0001
+    num_workers = 0
+    frame_size = (96, 96)
 
     dim_model = 256
     num_heads = 8

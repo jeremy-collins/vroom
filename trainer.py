@@ -48,12 +48,16 @@ class Trainer():
 
             y_expected = batch['y']
 
+            
+
             y_expected = torch.tensor(y_expected).to(self.device)
             y_expected = y_expected.permute(1, 0, 2)
 
             # model.out = model_dim -> 8, to compare with ground truth
             # pred is sequence of next projected embeddings, y_expected is sequence of ground truth joint velocities 
-            loss = loss_fn(pred[-frames_to_predict:], y_expected[-frames_to_predict:])
+            # loss = loss_fn(pred[-frames_to_predict:], y_expected[-frames_to_predict:])
+            loss = loss_fn(pred, y_expected[-1])
+
             # print(pred[-frames_to_predict:].shape, y_expected[-frames_to_predict:].shape)
             # print(pred[-frames_to_predict:, 0], y_expected[-frames_to_predict:, 0])
 
@@ -80,15 +84,18 @@ class Trainer():
 
                 y_expected = batch['y']
 
+                
+
                 y_expected = torch.tensor(y_expected).to(self.device)
-                
-                y_expected = y_expected.reshape(y_expected.shape[0], y_expected.shape[1], -1)
                 y_expected = y_expected.permute(1, 0, 2)
-                
+
                 # model.out = model_dim -> 8, to compare with ground truth
                 # pred is sequence of next projected embeddings, y_expected is sequence of ground truth joint velocities 
-                loss = loss_fn(pred[-frames_to_predict:], y_expected[-frames_to_predict:])
+                # loss = loss_fn(pred[-frames_to_predict:], y_expected[-frames_to_predict:])
+                loss = loss_fn(pred, y_expected[-1])
+
                 # print(pred[-frames_to_predict:].shape, y_expected[-frames_to_predict:].shape)
+                # print(pred[-frames_to_predict:, 0], y_expected[-frames_to_predict:, 0])
 
                 total_loss += loss.detach().item()
             
@@ -143,12 +150,12 @@ if __name__ == "__main__":
     # torch.multiprocessing.set_start_method('spawn')
     
     frames_per_clip = 5
-    frames_to_predict = 5 # must be <= frames_per_clip
-    stride = 1 # number of frames to shift when loading clips
+    frames_to_predict = 1 # must be <= frames_per_clip
+    stride = 15 # number of frames to shift when loading clips
     batch_size = 32
-    epoch_ratio = 1 # to sample just a portion of the dataset
+    epoch_ratio = 0.25 # to sample just a portion of the dataset
     epochs = 10
-    lr = 0.00001
+    lr = 0.00005
     num_workers = 8
 
     dim_model = 2048

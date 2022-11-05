@@ -21,8 +21,8 @@ class RoboTurk(data.Dataset):
         self.frame_size = frame_size
         self.indices, self.dataset = self.get_data(shuffle=shuffle)
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        model = Transformer()
-        self.SOS_token = torch.ones((1, model.dim_model), dtype=torch.float32, device=device) * 2
+        # model = Transformer()
+        # self.SOS_token = torch.ones((1, model.dim_model), dtype=torch.float32, device=device) * 2
         # self.EOS_token = torch.ones((1, model.dim_model), dtype=torch.float32) * 3
 
     def __getitem__(self, index):
@@ -101,10 +101,10 @@ class RoboTurk(data.Dataset):
                 if file.endswith('.jpg'):
                     parent_index = parent.split('_')[-1]
                     if parent_index != 'depth': # TODO: change this if we add depth
-                        img_names.append((int(parent_index+file[-7:-4]), os.path.join(dir, file)))
+                        img_names.append((int(parent_index+file[-8:-4]), os.path.join(dir, file)))
                 if file.endswith('.npy'):
                     parent_index = parent.split('_')[-2]
-                    joint_names.append((int(parent_index+file[-7:-4]), os.path.join(dir, file)))
+                    joint_names.append((int(parent_index+file[-8:-4]), os.path.join(dir, file)))
 
         # sorting the names numerically. first 4 digits are folder and last 3 are file
         img_names = sorted(img_names, key=lambda x: x[0])
@@ -112,20 +112,35 @@ class RoboTurk(data.Dataset):
 
         # indices = [x[0] for x in img_names]
 
-        for i in range(0, len(img_names)-self.num_frames, self.num_frames):
+        # # for i in range(0, len(img_names), self.num_frames): # for each sequence of frames
+        # for i in range(0, len(img_names) - self.num_frames, self.num_frames): # for each sequence
+        #     index_list = []
+        #     frame_names = []
+        #     joint_frame_names = []
+        #     # for j in range(0, self.stride*(self.num_frames - 1) + 1, self.stride): # for each frame in the sequence
+        #     for j in range(self.num_frames):
+        #         index_list.append(img_names[i+j][0]) # getting frame i, i+self.stride, i+2*self.stride, ...
+        #         frame_names.append(img_names[i+j][1])
+        #         joint_frame_names.append(joint_names[i+j][1])
+
+        for i in range(0, len(img_names) - self.num_frames * self.stride):
             index_list = []
             frame_names = []
             joint_frame_names = []
-            for j in range(0, self.num_frames, self.stride):
-                index_list.append(img_names[i+j][0])
-                frame_names.append(img_names[i+j][1])
-                joint_frame_names.append(joint_names[i+j][1])
+            for j in range(self.stride): # don't miss the skipped frames from the stride
+                if i % self.stride == j:
+                    for k in range(self.num_frames): # for each sequence
+                        index_list.append(img_names[i+k*self.stride][0]) # getting frame i, i+self.stride, i+2*self.stride, ... (i+1)+self.stride, (i+1)+2*self.stride, ... etc
+                        frame_names.append(img_names[i+k*self.stride][1])
+                        joint_frame_names.append(joint_names[i+k*self.stride][1])
 
-            # list of lists of frame indices
-            indices.append(index_list)
+                    # list of lists of frame indices
+                    indices.append(index_list)
 
-            # each element is a list of frame names with length num_frames and skipping frames according to stride
-            dataset.append((frame_names, joint_frame_names))
+                    # each element is a list of frame names with length num_frames and skipping frames according to stride
+                    dataset.append((frame_names, joint_frame_names))
+
+                    # print('frame_names: ', frame_names)
 
         if shuffle:
             np.random.shuffle(dataset)
@@ -136,10 +151,20 @@ class RoboTurk(data.Dataset):
 
 
 if __name__ == '__main__':
-    dataset = RoboTurk(num_frames=5, stride=10, dir='data/RoboTurk_videos/bins-Bread', stage='train', shuffle=True)
+    dataset = RoboTurk(num_frames=5, stride=15, dir='data/RoboTurk_videos/bins-Bread', stage='train', shuffle=True)
     # dataset = RoboTurk(num_frames=5, stride=1, dir='/media/jer/Crucial X6/data/RoboTurk_videos/bins-Bread', stage='train', shuffle=True)
-    # test_sampler = RandomSampler(dataset, replacement=False, num_samples=int(len(dataset) * 0.001))
-    # test_loader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False, sampler=test_sampler, num_workers=0)
+    test_sampler = RandomSampler(dataset, replacement=False, num_samples=int(len(dataset) * 0.01))
+    test_loader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False, sampler=test_sampler, num_workers=0)
+
+    # joints = []
+    # for i, data in enumerate(test_loader):
+    #     joint = dataset[i]['y']
+    #     joints.append(joint)
+    # joints = torch.cat(joints, dim=0)
+    # print('joints shape: ', torch.tensor(joints).shape)
+    # print('avg joints: ', torch.mean(joints, dim=0))
+
+    print(dataset)
 
     for i in range(10):
         print('dir: ', dataset.dir)

@@ -18,7 +18,7 @@ def predict(model, input_sequence, max_length=5):
     SOS_token = SOS_token.repeat(input_sequence.shape[0], 1, 1) # repeat SOS token for batch
     EOS_token = torch.ones((1, 1, model.dim_model), dtype=torch.float32, device=device) * 3
 
-    input_sequence = torch.cat((SOS_token, input_sequence), dim=1)
+    # input_sequence = torch.cat((SOS_token, input_sequence), dim=1)
 
     y_input = input_sequence[:,:-1] # all but last
     
@@ -27,13 +27,13 @@ def predict(model, input_sequence, max_length=5):
         # for _ in range(6):
         # for _ in range(max_length):
         print('y_input.shape: ', y_input.shape)
-        print('SOS_token.shape: ', SOS_token.shape)
         # y_input = torch.cat((SOS_token, input_sequence), dim=1)
 
         # Get target mask
         tgt_mask = model.get_tgt_mask(y_input.size(1)).to(device)
         
-        pred = model(input_sequence, y_input, tgt_mask) # (batch_size, seq_len, dim_model)
+        # pred = model(input_sequence, y_input, tgt_mask) # (batch_size, seq_len, dim_model)
+        pred = model(input_sequence) # encoder only
         
         # Permute pred to have batch size first again
         pred = pred.permute(1, 0, 2)
