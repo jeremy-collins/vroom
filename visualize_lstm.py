@@ -19,15 +19,25 @@ import robosuite
 from robosuite.utils.mjcf_utils import postprocess_model_xml
 from predict_lstm import LSTMPredictor
 
-def sim_environment(data_folder, env, run_id, predictor, sequence_length=5, frame_size=(64,64)):
+def sim_environment(data_folder, env, run_id, predictor, save=False, sequence_length=5, frame_size=(64,64)):
     jointdata_folder = os.path.join(data_folder, 'demo_{}_jointdata'.format(run_id))
 
+    video_writer = imageio.get_writer(os.path.join(data_folder, "visualize_demo_{}.mp4".format(run_id)), fps=120)
+
     past_frames = []
-    for i in range(0, 5):
+    for i in range(0, sequence_length):
         action = np.load(os.path.join(jointdata_folder, 'frame_{:04d}.npy'.format(i)))
         obs, reward, done, info = env.step(action)
-        env.render()
+        # env.render()
         render_img = obs['image']
+
+        if (save):
+            # frame = cv2.cvtColor(render_img, cv2.COLOR_BGR2RGB)
+            frame = cv2.flip(render_img, 0)
+            # cv2.imshow('whee', frame)
+            # cv2.waitKey(100)
+            video_writer.append_data(frame)
+
         render_img = frame_to_tensor(render_img, frame_size)
 
         past_frames.append(render_img)
@@ -43,8 +53,16 @@ def sim_environment(data_folder, env, run_id, predictor, sequence_length=5, fram
 
         action = predictor.predict(frames).numpy()
         obs, reward, done, info = env.step(action[0,:])
-        env.render()
+        # env.render()
         render_img = obs['image']
+
+        if (save):
+            # frame = cv2.cvtColor(render_img, cv2.COLOR_BGR2RGB)
+            frame = cv2.flip(render_img, 0)
+            # cv2.imshow('whee', frame)
+            # cv2.waitKey(100)
+            video_writer.append_data(frame)
+
         render_img = frame_to_tensor(render_img, frame_size)
 
         past_frames.append(render_img)
@@ -53,6 +71,9 @@ def sim_environment(data_folder, env, run_id, predictor, sequence_length=5, fram
         count += 1
         print(count)
         print(action)
+
+    if (save):
+        video_writer.close()
 
 def init_environment(demo_path, run_id):
     hdf5_path = os.path.join(demo_path, 'demo.hdf5')
@@ -80,7 +101,7 @@ def init_environment(demo_path, run_id):
     xml = postprocess_model_xml(model_xml_str)
     env.reset_from_xml_string(xml)
     env.sim.reset()
-    env.viewer.set_camera(0)
+    # env.viewer.set_camera(0)
 
     states = f["data/demo_{}/states".format(run_id)][()]
     env.sim.set_state_from_flattened(states[0])
@@ -118,10 +139,14 @@ if __name__ == "__main__":
         "--index",
         type=str
     )
+    parser.add_argument(
+        "--save",
+        action="store_true"
+    )
     args = parser.parse_args()
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     predictor = LSTMPredictor(num_channels=3, num_kernels=64, kernel_size=(3,3), padding=(1,1), activation="relu", frame_size=frame_size, num_layers=3, index=args.index, device=device)
 
     env = init_environment(args.demo_path, args.run_id)
-    sim_environment(args.data_folder, env, args.run_id, predictor)
+    sim_environment(args.data_folder, env, args.run_id, predictor, save=args.save)

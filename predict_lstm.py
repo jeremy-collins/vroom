@@ -24,6 +24,14 @@ class LSTMPredictor:
         self.model.eval()
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+        # arr = input_sequence.permute(0, 2, 3, 4, 1)
+        # whee = arr[0,0,:,:,:]
+        # whee = whee*255
+        # whee = whee.numpy()
+        # whee = whee.astype('uint8')
+        # cv2.imshow('whee', whee)
+        # cv2.waitKey(5000)
+
         with torch.no_grad():
             pred = self.model(input_sequence)
 
