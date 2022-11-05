@@ -12,7 +12,7 @@ from tqdm import tqdm
 import cv2
 from PIL import Image, ImageDraw
 
-from roboturk_loader_lstm import RoboTurk
+from roboturk_loader import RoboTurk
 
 class Trainer():
     def __init__(self, frame_size=(128,128)):
@@ -119,11 +119,11 @@ if __name__ == "__main__":
     batch_size = 8
     epoch_ratio = 0.25 # to sample just a portion of the dataset
     epochs = 10
-    lr = 0.0001
+    lr = 0.001
     num_workers = 0
     frame_size = (96, 96)
 
-    dim_model = 256
+    dim_model = 2048
     num_heads = 8
     num_encoder_layers = 6
     num_decoder_layers = 6

@@ -1,0 +1,42 @@
+------------------------- Epoch 1 -------------------------
+Training and validating model
+  0%|                                                                                                                            | 0/7321 [00:00<?, ?it/s]/home/jcollins90/vroom/trainer.py:42: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  X = torch.tensor(X).to(self.device)
+/home/jcollins90/vroom/trainer.py:45: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  y = torch.tensor(y).to(self.device)
+/home/jcollins90/vroom/transformer.py:103: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  y = torch.tensor(y).to(self.device)
+/home/jcollins90/vroom/trainer.py:53: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  y_expected = torch.tensor(y_expected).to(self.device)
+100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████| 7321/7321 [2:08:34<00:00,  1.05s/it]
+  0%|                                                                                                                            | 0/1823 [00:00<?, ?it/s]/home/jcollins90/vroom/trainer.py:78: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  X = torch.tensor(X).to(self.device)
+/home/jcollins90/vroom/trainer.py:81: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  y = torch.tensor(y).to(self.device)
+/home/jcollins90/vroom/trainer.py:89: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  y_expected = torch.tensor(y_expected).to(self.device)
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1823/1823 [10:13<00:00,  2.97it/s]
+Training loss: 0.0756
+Validation loss: 0.1210
+model saved as model_transformer_11_4.pt
+------------------------- Epoch 2 -------------------------
+Training and validating model
+100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████| 7321/7321 [2:06:10<00:00,  1.03s/it]
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1823/1823 [10:13<00:00,  2.97it/s]
+Training loss: 0.0903
+Validation loss: 0.1007
+model saved as model_transformer_11_4.pt
+------------------------- Epoch 3 -------------------------
+Training and validating model
+100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████| 7321/7321 [2:06:01<00:00,  1.03s/it]
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1823/1823 [10:14<00:00,  2.97it/s]
+Training loss: 0.1008
+Validation loss: 0.0977
+model saved as model_transformer_11_4.pt
+------------------------- Epoch 4 -------------------------
+Training and validating model
+100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████| 7321/7321 [2:06:19<00:00,  1.04s/it]
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1823/1823 [10:14<00:00,  2.97it/s]
+Training loss: 0.1018
+Validation loss: 0.0971
+model saved as model_transformer_11_4.pt

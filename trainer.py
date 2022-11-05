@@ -155,7 +155,7 @@ if __name__ == "__main__":
     batch_size = 32
     epoch_ratio = 0.25 # to sample just a portion of the dataset
     epochs = 10
-    lr = 0.00005
+    lr = 0.001
     num_workers = 8
 
     dim_model = 2048
