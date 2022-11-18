@@ -10,7 +10,8 @@ import numpy as np
 
 def separate_joint_csv(demo_path):
     # data_path = os.path.join(demo_path, 'jointdata')
-    data_path = os.path.join(demo_path, 'actions')
+    # data_path = os.path.join(demo_path, 'observations')
+    data_path = demo_path
 
     os.chdir(data_path)
     files = glob.glob('*.npy')
@@ -21,7 +22,7 @@ def separate_joint_csv(demo_path):
         except FileExistsError as error:
             pass
 
-        dat = np.load(file)
+        dat = np.load(file, allow_pickle=True)
         for i in range(0, dat.shape[0]):
             np.save(os.path.join(fname_base, 'frame_{:04d}.npy'.format(i)), dat[i])
 

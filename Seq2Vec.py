@@ -5,7 +5,7 @@ from ConvLSTM import ConvLSTM
 class Seq2Vec(nn.Module):
 
     def __init__(self, num_channels, num_kernels, kernel_size, padding,
-    activation, frame_size, num_layers):
+    activation, frame_size, num_layers, out_size):
 
         super(Seq2Vec, self).__init__()
 
@@ -40,7 +40,7 @@ class Seq2Vec(nn.Module):
         # Add linear layer to predict output vector
         self.fc = nn.Sequential(
             nn.Flatten(),
-            nn.LazyLinear(out_features=8),
+            nn.LazyLinear(out_features=out_size),
             nn.Sigmoid()
         )
 
