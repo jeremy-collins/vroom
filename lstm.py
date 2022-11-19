@@ -10,6 +10,8 @@ class ShallowRegressionLSTM(nn.Module):
         self.num_layers = num_layers
         self.output_size = output_size
 
+        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
         self.lstm = nn.LSTM(
             input_size=input_size,
             hidden_size=hidden_units,
@@ -21,10 +23,10 @@ class ShallowRegressionLSTM(nn.Module):
 
     def forward(self, X):
         batch_size = X.shape[0]
-        h0 = torch.zeros(self.num_layers, batch_size, self.hidden_units).requires_grad_()
-        c0 = torch.zeros(self.num_layers, batch_size, self.hidden_units).requires_grad_()
+        h0 = torch.zeros(self.num_layers, batch_size, self.hidden_units).requires_grad_().to(self.device)
+        c0 = torch.zeros(self.num_layers, batch_size, self.hidden_units).requires_grad_().to(self.device)
 
         _, (hn, _) = self.lstm(X, (h0, c0))
-        out = self.linear(hn[-1]).flatten()
+        out = self.linear(hn[-1])
 
         return out

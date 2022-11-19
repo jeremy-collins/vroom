@@ -89,6 +89,11 @@ class Panda(data.Dataset):
                     act_names.append((int(parent_index+file[-8:-4]), os.path.join(dir, file)))
 
         # sorting the names numerically. first 4 digits are folder and last 3 are file
+        # img_ind = [x[0] for x in img_names]
+        # act_ind = [x[0] for x in act_names]
+        # for i in img_ind:
+        #     if i not in act_ind:
+        #         print(i)
         img_names = sorted(img_names, key=lambda x: x[0])
         act_names = sorted(act_names, key=lambda x: x[0])
 
@@ -125,7 +130,7 @@ class Panda(data.Dataset):
 
 
 if __name__ == '__main__':
-    dataset = Panda(num_frames=5, stride=1, dir='/home/alanhesu/Documents/github/vroom/pandapickandplace/data', stage='train', shuffle=True)
+    dataset = Panda(num_frames=5, stride=1, dir='/home/jcollins90/vroom/data/PandaPickAndPlace-v1/data', stage='train', shuffle=True)
 
     for i in range(10):
         print('dir: ', dataset.dir)

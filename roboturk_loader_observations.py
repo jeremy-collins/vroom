@@ -33,32 +33,38 @@ class RoboTurkObs(data.Dataset):
 
         # loading and formatting image
         frames = []
-        # for obs in obs_names:
-        #     dat = np.load(obs, allow_pickle=True).item()
-        #     dat = np.concatenate([x.flatten() for x in dat.values()])
-        #     dat = torch.from_numpy(dat)
-        #     dat = dat.float()
+        # this is for loading observation spaces
+        # np.random.seed(0)
+        for obs in obs_names:
+            dat = np.load(obs, allow_pickle=True).item()
+            dat = np.concatenate([x.flatten() for x in dat.values()])
+            # dat = np.arange(0, 26) + np.random.randint(0, 1000) # testing
+            # dat = np.arange(0, 26) + np.random.choice(np.array([100,900])) # testing
+            dat = torch.from_numpy(dat)
+            dat = dat.float()
 
-        #     frames.append(dat)
+            frames.append(dat)
 
-        for frame in obs_names:
-            frame = np.load(frame)
-            # frame = torch.from_numpy(frame)
-            frame = torch.tensor(frame[0,0])
-            frame = frame.float()
-            frame = frame.flatten()
-            frames.append(frame)
+        # this was for loading action spaces
+        # for frame in obs_names:
+        #     frame = np.load(frame, allow_pickle=True)
+        #     # frame = torch.from_numpy(frame)
+        #     frame = torch.tensor(frame)
+        #     frame = frame.float()
+        #     frame = frame.flatten()
+        #     frames.append(frame)
 
         frames = torch.stack(frames, dim=0)
         frames = frames.detach()
 
         lastframe = frames[-1]
-        frames = torch.diff(frames, dim=0)
+        # frames = torch.diff(frames, dim=0)
         frames.requires_grad = False
 
         joints = np.load(act_names)
+        joints = frames[0,-4:]
         # joints = torch.from_numpy(joints)
-        joints = torch.tensor(joints[0,0] - lastframe)
+        joints = torch.tensor(joints)
         joints = joints.float()
         joints = joints.flatten()
 
@@ -124,10 +130,10 @@ class RoboTurkObs(data.Dataset):
             for j in range(self.stride): # don't miss the skipped frames from the stride
                 if i % self.stride == j:
                     for k in range(self.num_frames): # for each sequence
-                        index_list.append(act_names[i+k*self.stride][0]) # getting frame i, i+self.stride, i+2*self.stride, ... (i+1)+self.stride, (i+1)+2*self.stride, ... etc
-                        frame_names.append(act_names[i+k*self.stride][1])
+                        index_list.append(obs_names[i+k*self.stride][0]) # getting frame i, i+self.stride, i+2*self.stride, ... (i+1)+self.stride, (i+1)+2*self.stride, ... etc
+                        frame_names.append(obs_names[i+k*self.stride][1])
 
-                    if (not np.all(np.diff(index_list) == self.stride) or index_list[-1] + 1 != act_names[i+k*self.stride+1][0]):
+                    if (not np.all(np.diff(index_list) == self.stride) or index_list[-1] + 1 != obs_names[i+k*self.stride+1][0]):
                         # frames arent contiguous
                         # we cant use the last sequence in a video because we need a label for the seq+1 action
                         continue
@@ -145,14 +151,14 @@ class RoboTurkObs(data.Dataset):
         else:
             dataset = np.array(dataset)
 
-        return indices[0:200], dataset[0:200]
+        return indices, dataset
 
 
 if __name__ == '__main__':
-    dataset = RoboTurkObs(num_frames=5, stride=1, dir='/home/alanhesu/Documents/github/vroom/pandapickandplace/data', stage='train', shuffle=True)
+    dataset = RoboTurkObs(num_frames=5, stride=1, dir='data/PandaPickAndPlace-v1/data', stage='train', shuffle=True)
     # dataset = RoboTurk(num_frames=5, stride=1, dir='/media/jer/Crucial X6/data/RoboTurk_videos/bins-Bread', stage='train', shuffle=True)
-    test_sampler = RandomSampler(dataset, replacement=False, num_samples=int(len(dataset) * 0.01))
-    test_loader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False, sampler=test_sampler, num_workers=0)
+    # test_sampler = RandomSampler(dataset, replacement=False, num_samples=int(len(dataset) * 0.01))
+    test_loader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False, num_workers=0)
 
     # joints = []
     # for i, data in enumerate(test_loader):

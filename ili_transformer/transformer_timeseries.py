@@ -1,6 +1,7 @@
 
 import torch.nn as nn
 from torch import nn, Tensor
+import torch
 import ili_transformer.positional_encoder as pe
 import torch.nn.functional as F
 from ili_transformer.utils import generate_square_subsequent_mask
@@ -96,6 +97,7 @@ class TimeSeriesTransformer(nn.Module):
         super().__init__()
 
         self.dec_seq_len = dec_seq_len
+        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
         #print("input_size is: {}".format(input_size))
         #print("dim_val is: {}".format(dim_val))
@@ -192,16 +194,16 @@ class TimeSeriesTransformer(nn.Module):
         #print("From model.forward(): Size of src as given to forward(): {}".format(src.size()))
         #print("From model.forward(): tgt size = {}".format(tgt.size()))
 
-        tgt = src[:,-1,:].unsqueeze(1)
+        tgt = src[:,-1,:].unsqueeze(1).to(self.device)
 
         src_mask = generate_square_subsequent_mask(
             dim1=self.dec_seq_len,
             dim2=src.shape[1]
-        )
+        ).to(self.device)
         tgt_mask = generate_square_subsequent_mask(
             dim1=self.dec_seq_len,
             dim2=self.dec_seq_len
-        )
+        ).to(self.device)
 
         # Pass throguh the input layer right before the encoder
         src = self.encoder_input_layer(src) # src shape: [batch_size, src length, dim_val] regardless of number of input features
