@@ -5,6 +5,8 @@ from torch.utils.data import DataLoader, RandomSampler
 import math
 import numpy as np
 from transformer_observations import TransformerObs
+from ili_transformer.transformer_timeseries import TimeSeriesTransformer
+from lstm import ShallowRegressionLSTM
 import torchvision.transforms as transforms
 import argparse
 import os
@@ -40,25 +42,25 @@ class TrainerObs():
         for i, batch in enumerate(tqdm(dataloader)):
             X = batch['data']
             # X = torch.tensor(X).to(self.device)
-            X = X.clone().detach().requires_grad_(True).to(self.device)
+            X = X.clone().detach().to(self.device)
 
             y = batch['y']
             y = y.clone().detach().to(self.device)
             # y = torch.tensor(y).to(self.device)
 
-            pred = model(X)
+            pred = model(X).unsqueeze(1)
 
             y_expected = batch['y']
 
 
 
             y_expected = torch.tensor(y_expected).to(self.device)
-            y_expected = y_expected.permute(1, 0, 2)
+            # y_expected = y_expected.permute(1, 0, 2)
 
             # model.out = model_dim -> 8, to compare with ground truth
             # pred is sequence of next projected embeddings, y_expected is sequence of ground truth joint velocities
             # loss = loss_fn(pred[-frames_to_predict:], y_expected[-frames_to_predict:])
-            loss = loss_fn(pred, y_expected[-1])
+            loss = loss_fn(pred, y_expected)
 
             # print(pred[-frames_to_predict:].shape, y_expected[-frames_to_predict:].shape)
             # print(pred[-frames_to_predict:, 0], y_expected[-frames_to_predict:, 0])
@@ -78,30 +80,34 @@ class TrainerObs():
             for i, batch in enumerate(tqdm(dataloader)):
                 X = batch['data']
                 # X = torch.tensor(X).to(self.device)
-                X = X.clone().detach().requires_grad_(True).to(self.device)
+                X = X.clone().detach().to(self.device)
 
                 y = batch['y']
                 # y = torch.tensor(y).to(self.device)
                 y = y.clone().detach().to(self.device)
 
-                pred = model(X)
+                pred = model(X).unsqueeze(1)
 
                 y_expected = batch['y']
 
 
 
                 y_expected = torch.tensor(y_expected).to(self.device)
-                y_expected = y_expected.permute(1, 0, 2)
+                # y_expected = y_expected.permute(1, 0, 2)
 
                 # model.out = model_dim -> 8, to compare with ground truth
                 # pred is sequence of next projected embeddings, y_expected is sequence of ground truth joint velocities
                 # loss = loss_fn(pred[-frames_to_predict:], y_expected[-frames_to_predict:])
-                loss = loss_fn(pred, y_expected[-1])
+                loss = loss_fn(pred, y_expected)
 
                 # print(pred[-frames_to_predict:].shape, y_expected[-frames_to_predict:].shape)
                 # print(pred[-frames_to_predict:, 0], y_expected[-frames_to_predict:, 0])
 
                 total_loss += loss.detach().item()
+
+                print('input', X[0,:,:])
+                print('expected', y_expected[0,:])
+                print('predicted', pred[0,:])
 
         return total_loss / len(dataloader)
 
@@ -151,32 +157,35 @@ if __name__ == "__main__":
 
     # torch.multiprocessing.set_start_method('spawn')
 
-    frames_per_clip = 5
+    frames_per_clip = 10
     frames_to_predict = 1 # must be <= frames_per_clip
     stride = 1 # number of frames to shift when loading clips
-    batch_size = 32
+    batch_size = 4
     epoch_ratio = 0.25 # to sample just a portion of the dataset
-    epochs = 10
-    lr = 0.001
+    epochs = 30
+    lr = 1e-3
     num_workers = 6
 
     dim_model = 512
-    num_heads = 8
-    num_encoder_layers = 6
-    num_decoder_layers = 6
+    num_heads = 2
+    num_encoder_layers = 2
+    num_decoder_layers = 2
     dropout_p = 0.1
 
     trainer = TrainerObs()
 
-    model = TransformerObs(dim_model=dim_model, num_heads=num_heads, num_encoder_layers=num_encoder_layers, num_decoder_layers=num_decoder_layers, dropout_p=dropout_p)
+    # model = TransformerObs(dim_model=dim_model, num_heads=num_heads, num_encoder_layers=num_encoder_layers, num_decoder_layers=num_decoder_layers, dropout_p=dropout_p)
+    # model = TimeSeriesTransformer(input_size=1, dec_seq_len=frames_to_predict, dim_val=dim_model, n_encoder_layers=num_encoder_layers, n_decoder_layers=num_decoder_layers,
+                                # n_heads=num_heads, dim_feedforward_encoder=dim_model, dim_feedforward_decoder=dim_model, num_predicted_features=1, batch_first=True)
+    model = ShallowRegressionLSTM(input_size=1, output_size=1, hidden_units=512, num_layers=4)
     opt = optim.Adam(model.parameters(), lr=lr)
     loss_fn = nn.MSELoss() # TODO: change this to mse + condition + gradient difference
     if args.dataset == 'roboturk':
-        train_dataset = RoboTurkObs(num_frames=5, stride=stride, dir=args.folder, stage='train', shuffle=True)
+        train_dataset = RoboTurkObs(num_frames=frames_per_clip, stride=stride, dir=args.folder, stage='train', shuffle=True)
         train_sampler = RandomSampler(train_dataset, replacement=False, num_samples=int(len(train_dataset) * epoch_ratio))
         train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=False, sampler=train_sampler, num_workers=num_workers)
 
-        test_dataset = RoboTurkObs(num_frames=5, stride=stride, dir=args.folder, stage='test', shuffle=True)
+        test_dataset = RoboTurkObs(num_frames=frames_per_clip, stride=stride, dir=args.folder, stage='test', shuffle=True)
         test_sampler = RandomSampler(test_dataset, replacement=False, num_samples=int(len(test_dataset) * epoch_ratio))
         test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False, sampler=test_sampler, num_workers=num_workers)
 

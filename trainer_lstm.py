@@ -121,7 +121,7 @@ if __name__ == "__main__":
     epoch_ratio = 0.25 # to sample just a portion of the dataset
     epochs = 10
     lr = 0.001
-    num_workers = 0
+    num_workers = 6
     frame_size = (128, 128)
 
     dim_model = 2048

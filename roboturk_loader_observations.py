@@ -33,35 +33,40 @@ class RoboTurkObs(data.Dataset):
 
         # loading and formatting image
         frames = []
-        for obs in obs_names:
-            dat = np.load(obs, allow_pickle=True).item()
-            dat = np.concatenate([x.flatten() for x in dat.values()])
-            dat = torch.from_numpy(dat)
-            dat = dat.float()
+        # for obs in obs_names:
+        #     dat = np.load(obs, allow_pickle=True).item()
+        #     dat = np.concatenate([x.flatten() for x in dat.values()])
+        #     dat = torch.from_numpy(dat)
+        #     dat = dat.float()
 
-            frames.append(dat)
+        #     frames.append(dat)
+
+        for frame in obs_names:
+            frame = np.load(frame)
+            # frame = torch.from_numpy(frame)
+            frame = torch.tensor(frame[0,0])
+            frame = frame.float()
+            frame = frame.flatten()
+            frames.append(frame)
 
         frames = torch.stack(frames, dim=0)
         frames = frames.detach()
+
+        lastframe = frames[-1]
+        frames = torch.diff(frames, dim=0)
         frames.requires_grad = False
 
-        jointdata=[]
-        for joint_name in act_names:
-            joints = np.load(joint_name)
-            joints = torch.from_numpy(joints)
-            joints = joints.float()
-            joints = joints.flatten()
-            jointdata.append(joints)
-
-        jointdata = torch.stack(jointdata, dim=0) # bs, seq_len, 8
-            # jointdata = np.load(self.dataset[index][1])
-            # jointdata = torch.from_numpy(jointdata).float()
+        joints = np.load(act_names)
+        # joints = torch.from_numpy(joints)
+        joints = torch.tensor(joints[0,0] - lastframe)
+        joints = joints.float()
+        joints = joints.flatten()
 
         # # concatenating SOS token,
         # frames = torch.cat((self.SOS_token, frames), dim=0)
 
         #  frames.shape: (seq_len + 1, dim_model)
-        return {'data':frames, 'y':jointdata}
+        return {'data':frames, 'y':joints}
 
     def __len__(self):
         return len(self.dataset)
@@ -113,26 +118,25 @@ class RoboTurkObs(data.Dataset):
         #         frame_names.append(obs_names[i+j][1])
         #         joint_frame_names.append(act_names[i+j][1])
 
-        for i in range(0, len(obs_names) - self.num_frames * self.stride):
+        for i in range(0, len(obs_names) - self.num_frames * self.stride - 1):
             index_list = []
             frame_names = []
-            joint_frame_names = []
             for j in range(self.stride): # don't miss the skipped frames from the stride
                 if i % self.stride == j:
                     for k in range(self.num_frames): # for each sequence
-                        index_list.append(obs_names[i+k*self.stride][0]) # getting frame i, i+self.stride, i+2*self.stride, ... (i+1)+self.stride, (i+1)+2*self.stride, ... etc
-                        frame_names.append(obs_names[i+k*self.stride][1])
-                        joint_frame_names.append(act_names[i+k*self.stride][1])
+                        index_list.append(act_names[i+k*self.stride][0]) # getting frame i, i+self.stride, i+2*self.stride, ... (i+1)+self.stride, (i+1)+2*self.stride, ... etc
+                        frame_names.append(act_names[i+k*self.stride][1])
 
-                    if (not np.all(np.diff(index_list) == 1)):
+                    if (not np.all(np.diff(index_list) == self.stride) or index_list[-1] + 1 != act_names[i+k*self.stride+1][0]):
                         # frames arent contiguous
+                        # we cant use the last sequence in a video because we need a label for the seq+1 action
                         continue
 
                     # list of lists of frame indices
                     indices.append(index_list)
 
                     # each element is a list of frame names with length num_frames and skipping frames according to stride
-                    dataset.append((frame_names, joint_frame_names))
+                    dataset.append((frame_names, act_names[i+k*self.stride+1][1]))
 
                     # print('frame_names: ', frame_names)
 
@@ -141,7 +145,7 @@ class RoboTurkObs(data.Dataset):
         else:
             dataset = np.array(dataset)
 
-        return indices, dataset
+        return indices[0:200], dataset[0:200]
 
 
 if __name__ == '__main__':
