@@ -10,6 +10,7 @@ import argparse
 import cv2
 import os
 import glob
+import copy
 from torch.utils.data import DataLoader, RandomSampler
 
 class RoboTurkObs(data.Dataset):
@@ -23,6 +24,13 @@ class RoboTurkObs(data.Dataset):
         # model = Transformer()
         # self.SOS_token = torch.ones((1, model.dim_model), dtype=torch.float32, device=device) * 2
         # self.EOS_token = torch.ones((1, model.dim_model), dtype=torch.float32) * 3
+
+        test_X = np.concatenate((np.arange(0, 26) + 100, np.arange(0, 26) + 900))
+        test_y = np.concatenate((np.arange(22, 26) + 100, np.arange(22, 26) + 900))
+        self.mean_x = np.mean(test_X)
+        self.stdev_x = np.std(test_X)
+        self.mean_y = np.mean(test_y)
+        self.stdev_y = np.std(test_y)
 
     def __getitem__(self, index):
         # obtaining file paths
@@ -40,6 +48,7 @@ class RoboTurkObs(data.Dataset):
             dat = np.concatenate([x.flatten() for x in dat.values()])
             # dat = np.arange(0, 26) + np.random.randint(0, 1000) # testing
             # dat = np.arange(0, 26) + np.random.choice(np.array([100,900])) # testing
+            # dat = (dat - self.mean_x)/self.stdev_x
             dat = torch.from_numpy(dat)
             dat = dat.float()
 
@@ -57,12 +66,12 @@ class RoboTurkObs(data.Dataset):
         frames = torch.stack(frames, dim=0)
         frames = frames.detach()
 
-        lastframe = frames[-1]
         # frames = torch.diff(frames, dim=0)
         frames.requires_grad = False
 
         joints = np.load(act_names)
-        joints = frames[0,-4:]
+        # joints = torch.mean(frames, dim=0)[-4:]
+        # joints = (joints - self.mean_y)/self.stdev_y
         # joints = torch.from_numpy(joints)
         joints = torch.tensor(joints)
         joints = joints.float()
@@ -151,11 +160,11 @@ class RoboTurkObs(data.Dataset):
         else:
             dataset = np.array(dataset)
 
-        return indices, dataset
+        return indices[0:2], dataset[0:2]
 
 
 if __name__ == '__main__':
-    dataset = RoboTurkObs(num_frames=5, stride=1, dir='data/PandaPickAndPlace-v1/data', stage='train', shuffle=True)
+    dataset = RoboTurkObs(num_frames=5, stride=1, dir='pandapickandplace/data', stage='train', shuffle=True)
     # dataset = RoboTurk(num_frames=5, stride=1, dir='/media/jer/Crucial X6/data/RoboTurk_videos/bins-Bread', stage='train', shuffle=True)
     # test_sampler = RandomSampler(dataset, replacement=False, num_samples=int(len(dataset) * 0.01))
     test_loader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False, num_workers=0)

@@ -27,6 +27,6 @@ class ShallowRegressionLSTM(nn.Module):
         c0 = torch.zeros(self.num_layers, batch_size, self.hidden_units).requires_grad_().to(self.device)
 
         _, (hn, _) = self.lstm(X, (h0, c0))
-        out = self.linear(hn[-1])
+        out = self.linear(hn[0])
 
         return out

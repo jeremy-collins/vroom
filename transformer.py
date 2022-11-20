@@ -51,8 +51,8 @@ class Transformer(nn.Module):
             num_decoder_layers=num_decoder_layers,
             dropout=dropout_p,
         )
-        self.out = nn.Linear(dim_model, 8)
-        
+        self.out = nn.Linear(dim_model, 4)
+
     # def forward(self, src, tgt, tgt_mask=None, src_pad_mask=None, tgt_pad_mask=None):
     def forward(self, X):
         # src = self.embedding(src)
@@ -88,13 +88,13 @@ class Transformer(nn.Module):
                 # we will predict a linear projection of the next embedding (see self.out in transformer.py)
 
         y = torch.tensor(y).to(self.device)
-        
+
         # y_input = y
         # y_expected = y
-        
+
         # shift the tgt by one so we always predict the next embedding
-        y_input = y[:,:-1] # all but last 
-        
+        y_input = y[:,:-1] # all but last
+
         # Get mask to mask out the future frames
         sequence_length = y_input.size(1)
         tgt_mask = self.get_tgt_mask(sequence_length).to(self.device)
@@ -106,18 +106,18 @@ class Transformer(nn.Module):
         tgt = tgt * math.sqrt(self.dim_model)
         src = self.positional_encoder(src)
         tgt = self.positional_encoder(tgt)
-        
+
         # We could use the parameter batch_first=True, but our KDL version doesn't support it yet, so we permute
         # to obtain size (sequence length, batch_size, dim_model),
         src = src.permute(1,0,2)
         tgt = tgt.permute(1,0,2)
-        
+
         transformer_out = self.transformer(src, tgt, tgt_mask=tgt_mask, src_key_padding_mask=None, tgt_key_padding_mask=None)
         out = self.out(transformer_out) # outpout size: (sequence length, batch_size, 8)
         # out = transformer_out
-        
+
         return out
-      
+
     def get_tgt_mask(self, size) -> torch.tensor:
         # Generates a square matrix where the each row allows one word more to be seen
         mask = torch.tril(torch.ones(size, size) == 1) # Lower triangular matrix
@@ -127,25 +127,25 @@ class Transformer(nn.Module):
         mask = mask.float()
         mask = mask.masked_fill(mask == 0, float('-inf')) # Convert zeros to -inf
         mask = mask.masked_fill(mask == 1, float(0.0)) # Convert ones to 0
-        
+
         # mask = self.transformer.generate_square_subsequent_mask(1)
-        
+
         # EX for size=5:
         # [[0.,   0.,   0.,   0.,   -inf.],
         #  [0.,   0.,   0.,   0.,   0.],
         #  [0.,   0.,   0.,   0.,   0.],
         #  [0.,   0.,   0.,   0.,   0.],
         #  [0.,   0.,   0.,   0.,   0.]]
-        
+
         # EX for size=5:
         # [[0., -inf, -inf, -inf, -inf],
         #  [0.,   0., -inf, -inf, -inf],
         #  [0.,   0.,   0., -inf, -inf],
         #  [0.,   0.,   0.,   0., -inf],
         #  [0.,   0.,   0.,   0.,   0.]]
-        
+
         return mask
-    
+
     def create_pad_mask(self, matrix: torch.tensor, pad_token: int) -> torch.tensor:
         # If matrix = [1,2,3,0,0,0] where pad_token=0, the result mask is
         # [False, False, False, True, True, True]

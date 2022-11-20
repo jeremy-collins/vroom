@@ -60,8 +60,8 @@ class TrainerObs():
             # model.out = model_dim -> 8, to compare with ground truth
             # pred is sequence of next projected embeddings, y_expected is sequence of ground truth joint velocities
             # loss = loss_fn(pred[-frames_to_predict:], y_expected[-frames_to_predict:])
-            # loss = loss_fn(pred, y_expected)
-            loss = loss_fn(pred[:, :-1], y_expected[:, :-1]) # exclude gripper
+            loss = loss_fn(pred[-1,:,:], y_expected)
+            # loss = loss_fn(pred[:, :-1], y_expected[:, :-1]) # exclude gripper
 
             # print(pred[-frames_to_predict:].shape, y_expected[-frames_to_predict:].shape)
             # print(pred[-frames_to_predict:, 0], y_expected[-frames_to_predict:, 0])
@@ -70,9 +70,9 @@ class TrainerObs():
             loss.backward()
             opt.step()
 
-            # print('input', X[0,:,:])
-            # print('expected', y_expected[0,:])
-            # print('predicted', pred[0,:])
+            print('input', X[0,:,:])
+            print('expected', y_expected[0,:])
+            print('predicted', pred[-1,0,:])
 
             total_loss += loss.detach().item()
 
@@ -103,8 +103,8 @@ class TrainerObs():
                 # model.out = model_dim -> 8, to compare with ground truth
                 # pred is sequence of next projected embeddings, y_expected is sequence of ground truth joint velocities
                 # loss = loss_fn(pred[-frames_to_predict:], y_expected[-frames_to_predict:])
-                # loss = loss_fn(pred, y_expected)
-                loss = loss_fn(pred[:, :-1], y_expected[:, :-1]) # exclude gripper
+                loss = loss_fn(pred[-1,:,:], y_expected)
+                # loss = loss_fn(pred[:, :-1], y_expected[:, :-1]) # exclude gripper
 
                 # print(pred[-frames_to_predict:].shape, y_expected[-frames_to_predict:].shape)
                 # print(pred[-frames_to_predict:, 0], y_expected[-frames_to_predict:, 0])
@@ -163,27 +163,27 @@ if __name__ == "__main__":
 
     # torch.multiprocessing.set_start_method('spawn')
 
-    frames_per_clip = 10
+    frames_per_clip = 1
     frames_to_predict = 1 # must be <= frames_per_clip
     stride = 1 # number of frames to shift when loading clips
-    batch_size = 16
-    epoch_ratio = 0.01 # to sample just a portion of the dataset
+    batch_size = 32
+    epoch_ratio = 1 # to sample just a portion of the dataset
     epochs = 50
-    lr = 1e-5
+    lr = 1e-4
     num_workers = 6
 
-    dim_model = 512
+    dim_model = 2048
     num_heads = 8
     num_encoder_layers = 4
     num_decoder_layers = 4
-    dropout_p = 0.1
+    dropout_p = 0
 
     trainer = TrainerObs()
 
-    # model = TransformerObs(dim_model=dim_model, num_heads=num_heads, num_encoder_layers=num_encoder_layers, num_decoder_layers=num_decoder_layers, dropout_p=dropout_p)
+    model = TransformerObs(dim_model=dim_model, num_heads=num_heads, num_encoder_layers=num_encoder_layers, num_decoder_layers=num_decoder_layers, dropout_p=dropout_p)
     # model = TimeSeriesTransformer(input_size=26, dec_seq_len=frames_to_predict, dim_val=dim_model, n_encoder_layers=num_encoder_layers, n_decoder_layers=num_decoder_layers,
     #                             n_heads=num_heads, dim_feedforward_encoder=dim_model, dim_feedforward_decoder=dim_model, num_predicted_features=4, batch_first=True)
-    model = ShallowRegressionLSTM(input_size=26, output_size=4, hidden_units=2048, num_layers=8)
+    # model = ShallowRegressionLSTM(input_size=26, output_size=4, hidden_units=2048, num_layers=8)
     opt = optim.Adam(model.parameters(), lr=lr)
     loss_fn = nn.MSELoss() # TODO: change this to mse + condition + gradient difference
     if args.dataset == 'roboturk':
