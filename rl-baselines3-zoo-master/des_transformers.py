@@ -35,7 +35,7 @@ tensorboard --logdir decision_transformer_gym_replay/trained_models/
 '''
 #load_trained_model = False
 model_path = "./decision_transformer_gym_replay/trained_models/"
-num_train_epochs = 1
+num_train_epochs = 2
 use_video = True
 train_model = True
 save_model = True
@@ -44,6 +44,7 @@ enviroment = "PandaPickAndPlace-v1"  #"PandaReach-v1" #"PandaPickAndPlace-v1"
 load_checkpoint = False
 checkpoint_path = model_path +"nov22_100solves_500epochs/"
 checkpoint = "checkpoint-1500"
+test_model = False
 
 if delete_old_data == True:
     #home/codysoccerman/.cache/huggingface/datasets/decision_transformer_gym_replay/PandaPickAndPlace-v1/
@@ -68,7 +69,7 @@ print(dataset)
 # obs:  50 type:  <class 'list'>
 
 # Step 4: Defining a custom DataCollator for the transformers Trainer class
-@dataclass
+#@dataclass
 class DecisionTransformerGymDataCollator:
     return_tensors: str = "pt"
     max_len: int = 25 #subsets of the episode we use for training
@@ -91,7 +92,7 @@ class DecisionTransformerGymDataCollator:
         # calculate dataset stats for normalization of states
         states = []
         traj_lens = []
-        print("for loop")
+        print("for loop") # only 1 pass, slow remove if possible
         for obs in dataset["observations"]:
             states.extend(obs)
             traj_lens.append(len(obs))
@@ -185,18 +186,18 @@ class DecisionTransformerGymDataCollator:
         
         #with open('decision_transformer_gym_replay/s2.txt', 'w') as convert_file:
         #    convert_file.write(np.array2string(s.cpu().detach().numpy()))
-        '''
-        with open('decision_transformer_gym_replay/a.txt', 'w') as convert_file:
+    
+        with open('decision_transformer_gym_replay/notes/a.txt', 'w') as convert_file:
             convert_file.write(np.array2string(a.cpu().detach().numpy()))
-        with open('decision_transformer_gym_replay/r.txt', 'w') as convert_file:
+        with open('decision_transformer_gym_replay/notes/r.txt', 'w') as convert_file:
             convert_file.write(np.array2string(r.cpu().detach().numpy()))
-        with open('decision_transformer_gym_replay/rtg.txt', 'w') as convert_file:
+        with open('decision_transformer_gym_replay/notes/rtg.txt', 'w') as convert_file:
             convert_file.write(np.array2string(rtg.cpu().detach().numpy()))
-        with open('decision_transformer_gym_replay/timesteps.txt', 'w') as convert_file:
+        with open('decision_transformer_gym_replay/notes/timesteps.txt', 'w') as convert_file:
             convert_file.write(np.array2string(timesteps.cpu().detach().numpy()))
-        with open('decision_transformer_gym_replay/mask.txt', 'w') as convert_file:
+        with open('decision_transformer_gym_replay/notes/mask.txt', 'w') as convert_file:
             convert_file.write(np.array2string(mask.cpu().detach().numpy()))
-        '''
+        
         return {
             "states": s,
             "actions": a,
@@ -293,190 +294,191 @@ if save_model == True:
     with open(output_dir + 'loss.txt', 'w') as convert_file:
         convert_file.write(str(loss_array))
 
-
-
 # Step 7: Visualize the performance of the agent
+if test_model == True:
 
-# home/codysoccerman/miniconda3/envs/imitation/lib/python3.8/site-packages/mujoco_py/
-# Function that gets an action from the model using autoregressive prediction with a window of the previous 20 timesteps.
-def get_action(model, states, actions, rewards, returns_to_go, timesteps):
-    # This implementation does not condition on past rewards
+    # home/codysoccerman/miniconda3/envs/imitation/lib/python3.8/site-packages/mujoco_py/
+    # Function that gets an action from the model using autoregressive prediction with a window of the previous 20 timesteps.
+    def get_action(model, states, actions, rewards, returns_to_go, timesteps):
+        # This implementation does not condition on past rewards
 
-    states = states.reshape(1, -1, model.config.state_dim)
-    actions = actions.reshape(1, -1, model.config.act_dim)
-    returns_to_go = returns_to_go.reshape(1, -1, 1)
-    timesteps = timesteps.reshape(1, -1)
+        states = states.reshape(1, -1, model.config.state_dim)
+        actions = actions.reshape(1, -1, model.config.act_dim)
+        returns_to_go = returns_to_go.reshape(1, -1, 1)
+        timesteps = timesteps.reshape(1, -1)
 
-    states = states[:, -model.config.max_length :]
-    actions = actions[:, -model.config.max_length :]
-    returns_to_go = returns_to_go[:, -model.config.max_length :]
-    timesteps = timesteps[:, -model.config.max_length :]
-    padding = model.config.max_length - states.shape[1]
-    # pad all tokens to sequence length
-    attention_mask = torch.cat([torch.zeros(padding), torch.ones(states.shape[1])])
-    attention_mask = attention_mask.to(dtype=torch.long).reshape(1, -1)
-    states = torch.cat([torch.zeros((1, padding, model.config.state_dim)), states], dim=1).float()
-    actions = torch.cat([torch.zeros((1, padding, model.config.act_dim)), actions], dim=1).float()
-    returns_to_go = torch.cat([torch.zeros((1, padding, 1)), returns_to_go], dim=1).float()
-    timesteps = torch.cat([torch.zeros((1, padding), dtype=torch.long), timesteps], dim=1)
+        states = states[:, -model.config.max_length :]
+        actions = actions[:, -model.config.max_length :]
+        returns_to_go = returns_to_go[:, -model.config.max_length :]
+        timesteps = timesteps[:, -model.config.max_length :]
+        padding = model.config.max_length - states.shape[1]
+        # pad all tokens to sequence length
+        attention_mask = torch.cat([torch.zeros(padding), torch.ones(states.shape[1])])
+        attention_mask = attention_mask.to(dtype=torch.long).reshape(1, -1)
+        states = torch.cat([torch.zeros((1, padding, model.config.state_dim)), states], dim=1).float()
+        actions = torch.cat([torch.zeros((1, padding, model.config.act_dim)), actions], dim=1).float()
+        returns_to_go = torch.cat([torch.zeros((1, padding, 1)), returns_to_go], dim=1).float()
+        timesteps = torch.cat([torch.zeros((1, padding), dtype=torch.long), timesteps], dim=1)
 
-    state_preds, action_preds, return_preds = model.original_forward(
-        states=states,
-        actions=actions,
-        rewards=rewards,
-        returns_to_go=returns_to_go,
-        timesteps=timesteps,
-        attention_mask=attention_mask,
-        return_dict=False,
-    )
-
-    return action_preds[0, -1]
-
-# build the environment
-device = "cpu" #######
-#accelerator = Accelerator() #####
-#device = accelerator.device ######
-time = datetime.datetime.now().strftime('%m-%d_%H-%M')
-color_output = output_dir + "videos_color/"
-os.makedirs(output_dir + "videos_gray/")
-model = model.to(device) ###### model.to("cpu")
-env = gym.make(enviroment)
-
-env = Recorder(env, color_output, fps=20)
-max_ep_len = 50  #1000   # unsure
-#device = "cpu" #######
-scale = 1  #1000.0  # normalization for rewards/returns
-TARGET_RETURN = 0 / scale #12000 / scale  # evaluation is conditioned on a return of 12000, scaled accordingly
-
-state_mean = collator.state_mean.astype(np.float16)
-state_std = collator.state_std.astype(np.float16) #32
-
-act_dim = env.action_space.shape[0]
-state_dim = len(state_mean)#a_len + b_len + c_len #25
-
-state_mean = torch.from_numpy(state_mean).to(device=device)
-state_std = torch.from_numpy(state_std).to(device=device)
-#print("len(state_mean): ",len(state_mean))
-image_array = []
-num_videos = 50 # number of episode videos to produce
-low_res = 96
-for episode in range(num_videos):
-    print("episode: ",episode)
-
-    episode_return, episode_length = 0, 0
-    state = env.reset() # fro video we don't use state/typical observation space. instead use pixels
-
-    if use_video == True:
-        preaction_env = env.render("rgb_array") #rgba
-        #env.render("human") ##
-
-        preaction_env = preaction_env[:,:,:3]
-        #image_array.append(preaction_env)
-
-        # save to videos_low_res
-        low_res_image = np.array( Image.fromarray(preaction_env).resize((low_res,low_res))) #96x96X3
-
-        # save to videos_low_res
-        grayscaled_image = Image.fromarray(low_res_image).convert('L') #96x96x1
-        
-        single_image = np.asarray(grayscaled_image, dtype='float16')
-        #image_array = image_array[:,:,1] 
-        #print(image_array.shape)
-        obs_space_flat=np.reshape(single_image,(9216))/255 #1x9216/255 1 frame
-
-
-    if use_video == False:
-        a = np.array(state['achieved_goal'])
-        b = np.array(state['desired_goal'])
-        c = np.array(state['observation'])
-        obs_space_flat = np.concatenate((a,b,c),axis=0)
-
-    
-    target_return = torch.tensor(TARGET_RETURN, device=device, dtype=torch.float16).reshape(1, 1)
-    #states = torch.from_numpy(state).reshape(1, state_dim).to(device=device, dtype=torch.float32)
-    
-    states = torch.from_numpy(obs_space_flat).reshape(1, state_dim).to(device=device, dtype=torch.float16)  ## [0]
-    #print("len states: ",len(states))
-
-    actions = torch.zeros((0, act_dim), device=device, dtype=torch.float16)
-    rewards = torch.zeros(0, device=device, dtype=torch.float16)
-
-    timesteps = torch.tensor(0, device=device, dtype=torch.long).reshape(1, 1)
-
-
-    for t in range(50): #max_ep_len):
-        #print("frame: ",t)
-        
-        actions = torch.cat([actions, torch.zeros((1, act_dim), device=device)], dim=0)
-        rewards = torch.cat([rewards, torch.zeros(1, device=device)])
-
-        action = get_action(
-            model,
-            (states - state_mean) / state_std,
-            actions,
-            rewards,
-            target_return,
-            timesteps,
+        state_preds, action_preds, return_preds = model.original_forward(
+            states=states,
+            actions=actions,
+            rewards=rewards,
+            returns_to_go=returns_to_go,
+            timesteps=timesteps,
+            attention_mask=attention_mask,
+            return_dict=False,
         )
-        actions[-1] = action
-        action = action.detach().cpu().numpy()
 
-        state, reward, done, _ = env.step(action)
-        #print("state after step: ", state)
+        return action_preds[0, -1]
+
+    # build the environment
+    device = "cpu" #######
+    #accelerator = Accelerator() #####
+    #device = accelerator.device ######
+    time = datetime.datetime.now().strftime('%m-%d_%H-%M')
+    color_output = output_dir + "videos_color/"
+    os.makedirs(output_dir + "videos_gray/")
+    model = model.to(device) ###### model.to("cpu")
+    env = gym.make(enviroment)
+
+    env = Recorder(env, color_output, fps=20)
+    max_ep_len = 50  #1000   # unsure
+    #device = "cpu" #######
+    scale = 1  #1000.0  # normalization for rewards/returns
+    TARGET_RETURN = 0 / scale #12000 / scale  # evaluation is conditioned on a return of 12000, scaled accordingly
+
+    state_mean = collator.state_mean.astype(np.float16)
+    state_std = collator.state_std.astype(np.float16) #32
+
+    act_dim = env.action_space.shape[0]
+    state_dim = len(state_mean)#a_len + b_len + c_len #25
+
+    state_mean = torch.from_numpy(state_mean).to(device=device)
+    state_std = torch.from_numpy(state_std).to(device=device)
+    #print("len(state_mean): ",len(state_mean))
+    image_array = []
+    num_videos = 50 # number of episode videos to produce
+    low_res = 96
+    for episode in range(num_videos):
+        print("episode: ",episode)
+
+        episode_return, episode_length = 0, 0
+        state = env.reset() # fro video we don't use state/typical observation space. instead use pixels
+
+        if use_video == True:
+            preaction_env = env.render("rgb_array") #rgba
+            #env.render("human") ##
+
+            preaction_env = preaction_env[:,:,:3]
+            #image_array.append(preaction_env)
+
+            # save to videos_low_res
+            low_res_image = np.array( Image.fromarray(preaction_env).resize((low_res,low_res))) #96x96X3
+
+            # save to videos_low_res
+            grayscaled_image = Image.fromarray(low_res_image).convert('L') #96x96x1
+            
+            single_image = np.asarray(grayscaled_image, dtype='float16')
+            #image_array = image_array[:,:,1] 
+            #print(image_array.shape)
+            obs_space_flat=np.reshape(single_image,(9216))/255 #1x9216/255 1 frame
+
+
         if use_video == False:
             a = np.array(state['achieved_goal'])
             b = np.array(state['desired_goal'])
             c = np.array(state['observation'])
             obs_space_flat = np.concatenate((a,b,c),axis=0)
 
-
-        if use_video == True:
-            preaction_env = env.render("rgb_array") #rgba
-            env.render("human") ##
-            # rgba to rgb
-            preaction_env = preaction_env[:,:,:3]
-            #image_array.append(preaction_env)
-
-            # save to videos_low_res
-            low_res_image = np.array( Image.fromarray(preaction_env).resize((low_res,low_res))) #96x96X3
-            #print("low_res_image: ", low_res_image)
-            # save to videos_low_res
-            grayscaled_image = Image.fromarray(low_res_image).convert('L') #96x96x1
-            image_array.append(grayscaled_image)
-
-            single_image = np.asarray(grayscaled_image, dtype='float16')
-            #image_array = image_array[:,:,1] 
-            #print(image_array.shape)
-            obs_space_flat=np.reshape(single_image,(9216))/255 #1x9216/255 1 frame
-
-        cur_state = torch.from_numpy(obs_space_flat).to(device=device).reshape(1, state_dim) ## added [0]
-
-        states = torch.cat([states, cur_state], dim=0)
-        #print("rewards: ", rewards)
-        #print("reward: ", reward)
-        reward = np.array([reward])
-        reward = torch.from_numpy(reward).to(device=device)
-        rewards[-1] = reward
-
-        pred_return = target_return[0, -1] - (reward / scale)
-        target_return = torch.cat([target_return, pred_return.reshape(1, 1)], dim=1)
-        timesteps = torch.cat([timesteps, torch.ones((1, 1), device=device, dtype=torch.long) * (t + 1)], dim=1)
-
-        episode_return += reward
         
-        episode_length += 1
-        #print("episode_return: ",episode_return,"episode_length: ",episode_length)
-        if done:
-            if use_video == True:
-                #print(gray_output+"video_{}.mp4".format(episode))
-                video_writer = imageio.get_writer(output_dir +"videos_gray/video_{}.mp4".format(episode), fps=20)
-                for single_image in image_array:
-                    video_writer.append_data(np.asarray(single_image))
-                video_writer.close()
-                image_array = []
-            env.reset()
-            #episode_return = 0
-            print("break")
-            break
-    print("episode_return: ",episode_return)
+        target_return = torch.tensor(TARGET_RETURN, device=device, dtype=torch.float16).reshape(1, 1)
+        #states = torch.from_numpy(state).reshape(1, state_dim).to(device=device, dtype=torch.float32)
+        
+        states = torch.from_numpy(obs_space_flat).reshape(1, state_dim).to(device=device, dtype=torch.float16)  ## [0]
+        #print("len states: ",len(states))
 
+        actions = torch.zeros((0, act_dim), device=device, dtype=torch.float16)
+        rewards = torch.zeros(0, device=device, dtype=torch.float16)
+
+        timesteps = torch.tensor(0, device=device, dtype=torch.long).reshape(1, 1)
+
+
+        for t in range(50): #max_ep_len):
+            #print("frame: ",t)
+            
+            actions = torch.cat([actions, torch.zeros((1, act_dim), device=device)], dim=0)
+            rewards = torch.cat([rewards, torch.zeros(1, device=device)])
+
+            action = get_action(
+                model,
+                (states - state_mean) / state_std,
+                actions,
+                rewards,
+                target_return,
+                timesteps,
+            )
+            actions[-1] = action
+            action = action.detach().cpu().numpy()
+
+            state, reward, done, _ = env.step(action)
+            #print("state after step: ", state)
+            if use_video == False:
+                a = np.array(state['achieved_goal'])
+                b = np.array(state['desired_goal'])
+                c = np.array(state['observation'])
+                obs_space_flat = np.concatenate((a,b,c),axis=0)
+
+
+            if use_video == True:
+                preaction_env = env.render("rgb_array") #rgba
+                env.render("human") ##
+                # rgba to rgb
+                preaction_env = preaction_env[:,:,:3]
+                #image_array.append(preaction_env)
+
+                # save to videos_low_res
+                low_res_image = np.array( Image.fromarray(preaction_env).resize((low_res,low_res))) #96x96X3
+                #print("low_res_image: ", low_res_image)
+                # save to videos_low_res
+                grayscaled_image = Image.fromarray(low_res_image).convert('L') #96x96x1
+                image_array.append(grayscaled_image)
+
+                single_image = np.asarray(grayscaled_image, dtype='float16')
+                #image_array = image_array[:,:,1] 
+                #print(image_array.shape)
+                obs_space_flat=np.reshape(single_image,(9216))/255 #1x9216/255 1 frame
+
+            cur_state = torch.from_numpy(obs_space_flat).to(device=device).reshape(1, state_dim) ## added [0]
+
+            states = torch.cat([states, cur_state], dim=0)
+            #print("rewards: ", rewards)
+            #print("reward: ", reward)
+            reward = np.array([reward])
+            reward = torch.from_numpy(reward).to(device=device)
+            rewards[-1] = reward
+
+            pred_return = target_return[0, -1] - (reward / scale)
+            target_return = torch.cat([target_return, pred_return.reshape(1, 1)], dim=1)
+            timesteps = torch.cat([timesteps, torch.ones((1, 1), device=device, dtype=torch.long) * (t + 1)], dim=1)
+
+            episode_return += reward
+            
+            episode_length += 1
+            #print("episode_return: ",episode_return,"episode_length: ",episode_length)
+            if done:
+                if use_video == True:
+                    #print(gray_output+"video_{}.mp4".format(episode))
+                    video_writer = imageio.get_writer(output_dir +"videos_gray/video_{}.mp4".format(episode), fps=20)
+                    for single_image in image_array:
+                        video_writer.append_data(np.asarray(single_image))
+                    video_writer.close()
+                    image_array = []
+                env.reset()
+                #episode_return = 0
+                print("break")
+                break
+        print("episode_return: ",episode_return)
+
+else:
+    print("test_model == False: Done")

@@ -17,7 +17,7 @@ using_videos = True
 save_data = True
 delete_old_data = True
 behavioral_cloning = False
-n=100
+n=6
 
 dicts = {}
 dict_list = []
