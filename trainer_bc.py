@@ -4,9 +4,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, RandomSampler
 import math
 import numpy as np
-from transformer_observations import TransformerObs
-from ili_transformer.transformer_timeseries import TimeSeriesTransformer
-from lstm import ShallowRegressionLSTM
+from bc_mlp import BC_custom
 import torchvision.transforms as transforms
 import argparse
 import os
@@ -16,12 +14,13 @@ from PIL import Image, ImageDraw
 from utils import Utils
 
 from roboturk_loader_observations import RoboTurkObs
-from panda_loader_lsm.py import Panda
 
-class TrainerObs():
-    def __init__(self):
+class TrainerBC():
+    def __init__(self, ent_weight=0, l2_weight=0):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print('device: ', self.device)
+        self.ent_weight = ent_weight
+        self.l2_weight = l2_weight
         # self.utils = Utils()
         # self.utils.init_resnet()
         # self.utils.init_resnet(freeze=False)
@@ -35,7 +34,7 @@ class TrainerObs():
     #     return latents
 
 
-    def train_loop(self, model, opt, loss_fn, dataloader, frames_to_predict):
+    def train_loop(self, model, opt, dataloader):
         model = model.to(self.device)
         model.train()
         total_loss = 0
@@ -49,76 +48,81 @@ class TrainerObs():
             # y = y.clone().detach().to(self.device)?
             y = torch.tensor(y).to(self.device)
 
-            pred = model(X)
+            _, log_prob, entropy = model.evaluate_actions(X, y)
 
             y_expected = batch['y']
-
-
-
             y_expected = torch.tensor(y_expected).to(self.device)
-            # y_expected = y_expected.permute(1, 0, 2)
 
-            # model.out = model_dim -> 8, to compare with ground truth
-            # pred is sequence of next projected embeddings, y_expected is sequence of ground truth joint velocities
-            # loss = loss_fn(pred[-frames_to_predict:], y_expected[-frames_to_predict:])
-            # loss = loss_fn(pred[-1,:,:], y_expected)
-            loss = loss_fn(pred[:, :-1], y_expected[:, :-1]) # exclude gripper
+            prob_true_act = torch.exp(log_prob).mean()
+            log_prob = log_prob.mean()
+            entropy = entropy.mean()
 
-            # print(pred[-frames_to_predict:].shape, y_expected[-frames_to_predict:].shape)
-            # print(pred[-frames_to_predict:, 0], y_expected[-frames_to_predict:, 0])
+            l2_norms = [torch.sum(torch.square(w)) for w in model.parameters()]
+            l2_norm = sum(l2_norms) / 2  # divide by 2 to cancel with gradient of square
+            # sum of list defaults to float(0) if len == 0.
+            assert isinstance(l2_norm, torch.Tensor)
+
+            ent_loss = -self.ent_weight * entropy
+            neglogp = -log_prob
+            l2_loss = self.l2_weight * l2_norm
+            loss = neglogp + ent_loss + l2_loss
 
             opt.zero_grad()
             loss.backward()
             opt.step()
 
-            # print('input', X[0,:,:])
-            print('expected', y_expected[0,:])
-            print('predicted', pred[0,:])
-
             total_loss += loss.detach().item()
 
         return total_loss / len(dataloader)
 
-    def validation_loop(self, model, loss_fn, dataloader, frames_to_predict):
+    def validation_loop(self, model, dataloader):
         model.eval()
         total_loss = 0
         with torch.no_grad():
             for i, batch in enumerate(tqdm(dataloader)):
                 X = batch['data']
-                # X = torch.tensor(X).to(self.device)
-                X = X.clone().detach().to(self.device)
+                X = torch.tensor(X).to(self.device)
+                # X = X.clone().detach().to(self.device)
 
                 y = batch['y']
-                # y = torch.tensor(y).to(self.device)
-                y = y.clone().detach().to(self.device)
+                # y = y.clone().detach().to(self.device)?
+                y = torch.tensor(y).to(self.device)
 
-                pred = model(X)
+                _, log_prob, entropy = model.evaluate_actions(X, y)
 
                 y_expected = batch['y']
-
-
-
                 y_expected = torch.tensor(y_expected).to(self.device)
-                # y_expected = y_expected.permute(1, 0, 2)
 
-                # model.out = model_dim -> 8, to compare with ground truth
-                # pred is sequence of next projected embeddings, y_expected is sequence of ground truth joint velocities
-                # loss = loss_fn(pred[-frames_to_predict:], y_expected[-frames_to_predict:])
-                # loss = loss_fn(pred[-1,:,:], y_expected)
-                loss = loss_fn(pred[:, :-1], y_expected[:, :-1]) # exclude gripper
+                prob_true_act = torch.exp(log_prob).mean()
+                log_prob = log_prob.mean()
+                entropy = entropy.mean()
 
-                # print(pred[-frames_to_predict:].shape, y_expected[-frames_to_predict:].shape)
-                # print(pred[-frames_to_predict:, 0], y_expected[-frames_to_predict:, 0])
+                l2_norms = [torch.sum(torch.square(w)) for w in model.parameters()]
+                l2_norm = sum(l2_norms) / 2  # divide by 2 to cancel with gradient of square
+                # sum of list defaults to float(0) if len == 0.
+                assert isinstance(l2_norm, torch.Tensor)
 
-                # print('input', X[0,:,:])
-                # print('expected', y_expected[0,:])
-                # print('predicted', pred[0,:])
+                ent_loss = -self.ent_weight * entropy
+                neglogp = -log_prob
+                l2_loss = self.l2_weight * l2_norm
+                loss = neglogp + ent_loss + l2_loss
 
                 total_loss += loss.detach().item()
 
+                pred, values, log_prob = model(X)
+                print('expected: {}'.format(y_expected[0,:]))
+                print('pred: {}'.format(pred[0,:]))
+                print('values: {}'.format(values[0,:]))
+                print('log_prob: {}'.format(log_prob[0]))
+
+                l1 = nn.L1Loss()
+                out = l1(pred, y_expected)
+                print('l1 loss: {}'.format(out))
+                
+
         return total_loss / len(dataloader)
 
-    def fit(self, model, opt, loss_fn, train_dataloader, val_dataloader, epochs, frames_to_predict):
+    def fit(self, model, opt, train_dataloader, val_dataloader, epochs):
         # Used for plotting later on
         train_loss_list, validation_loss_list = [], []
 
@@ -127,10 +131,10 @@ class TrainerObs():
             if epochs > 1:
                 print("-"*25, f"Epoch {epoch + 1}","-"*25)
 
-            train_loss = self.train_loop(model, opt, loss_fn, train_dataloader, frames_to_predict)
+            train_loss = self.train_loop(model, opt, train_dataloader)
             train_loss_list += [train_loss]
 
-            validation_loss = self.validation_loop(model, loss_fn, val_dataloader, frames_to_predict)
+            validation_loss = self.validation_loop(model, val_dataloader)
             validation_loss_list += [validation_loss]
 
             print(f"Training loss: {train_loss:.4f}")
@@ -168,10 +172,10 @@ if __name__ == "__main__":
     frames_to_predict = 1 # must be <= frames_per_clip
     stride = 1 # number of frames to shift when loading clips
     batch_size = 32
-    epoch_ratio = 1 # to sample just a portion of the dataset
-    epochs = 100
-    lr = 1e-4
-    num_workers = 6
+    epoch_ratio = .1 # to sample just a portion of the dataset
+    epochs = 50
+    lr = 1e-3
+    num_workers = 4
 
     dim_model = 2048
     num_heads = 8
@@ -179,14 +183,17 @@ if __name__ == "__main__":
     num_decoder_layers = 4
     dropout_p = 0
 
-    trainer = TrainerObs()
+    trainer = TrainerBC()
 
-    # model = TransformerObs(dim_model=dim_model, num_heads=num_heads, num_encoder_layers=num_encoder_layers, num_decoder_layers=num_decoder_layers, dropout_p=dropout_p)
-    # model = TimeSeriesTransformer(input_size=26, dec_seq_len=frames_to_predict, dim_val=dim_model, n_encoder_layers=num_encoder_layers, n_decoder_layers=num_decoder_layers,
-    #                             n_heads=num_heads, dim_feedforward_encoder=dim_model, dim_feedforward_decoder=dim_model, num_predicted_features=4, batch_first=True)
-    model = ShallowRegressionLSTM(input_size=64, output_size=4, hidden_units=1024, num_layers=6, cnn=True)
+    model = BC_custom(input_size=26, output_size=4, net_arch=[32,32])
     opt = optim.Adam(model.parameters(), lr=lr)
-    loss_fn = nn.L1Loss() # TODO: change this to mse + condition + gradient difference
+    try:
+        model.load_state_dict(torch.load('./checkpoints/model_{}.pt'.format(args.name)))
+        print('loaded model')
+    except:
+        print('saved model not found')
+        pass
+    # loss_fn = nn.MSELoss() # TODO: change this to mse + condition + gradient difference
     if args.dataset == 'roboturk':
         train_dataset = RoboTurkObs(num_frames=frames_per_clip, stride=stride, dir=args.folder, stage='train', shuffle=True)
         train_sampler = RandomSampler(train_dataset, replacement=False, num_samples=int(len(train_dataset) * epoch_ratio))
@@ -196,25 +203,16 @@ if __name__ == "__main__":
         test_sampler = RandomSampler(test_dataset, replacement=False, num_samples=int(len(test_dataset) * epoch_ratio))
         test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False, sampler=test_sampler, num_workers=num_workers)
 
-    elif args.dataset == 'panda_img':
-        train_dataset = Panda(num_frames=frames_per_clip, stride=stride, dir=args.folder, stage='train', shuffle=True)
-        train_sampler = RandomSampler(train_dataset, replacement=False, num_samples=int(len(train_dataset) * epoch_ratio))
-        train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=False, sampler=train_sampler, num_workers=num_workers)
-
-        test_dataset = Panda(num_frames=frames_per_clip, stride=stride, dir=args.folder, stage='test', shuffle=True)
-        test_sampler = RandomSampler(test_dataset, replacement=False, num_samples=int(len(test_dataset) * epoch_ratio))
-        test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False, sampler=test_sampler, num_workers=num_workers)
-
     if args.save_best:
         best_loss = 1e10
         epoch = 1
         while True:
             print("-"*25, f"Epoch {epoch}","-"*25)
-            train_loss_list, validation_loss_list = trainer.fit(model=model, opt=opt, loss_fn=loss_fn, train_dataloader=train_loader, val_dataloader=test_loader, epochs=1, frames_to_predict=frames_to_predict)
+            train_loss_list, validation_loss_list = trainer.fit(model=model, opt=opt, train_dataloader=train_loader, val_dataloader=test_loader, epochs=1)
             if validation_loss_list[-1] < best_loss:
                 best_loss = validation_loss_list[-1]
                 torch.save(model.state_dict(), './checkpoints/model_' + args.name + '.pt')
                 print('model saved as model_' + str(args.name) + '.pt')
             epoch += 1
     else:
-        trainer.fit(model=model, opt=opt, loss_fn=loss_fn, train_dataloader=train_loader, val_dataloader=test_loader, epochs=epochs, frames_to_predict=frames_to_predict)
+        trainer.fit(model=model, opt=opt, train_dataloader=train_loader, val_dataloader=test_loader, epochs=epochs)
