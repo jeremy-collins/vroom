@@ -1,0 +1,202 @@
+MinecraftAgentPolicy(
+  (net): MinecraftPolicy(
+    (img_preprocess): ImgPreprocessing()
+    (img_process): ImgObsProcess(
+      (cnn): ImpalaCNN(
+        (stacks): ModuleList(
+          (0): CnnDownStack(
+            (firstconv): FanInInitReLULayer(
+              (layer): Conv2d(3, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+            )
+            (n): GroupNorm(1, 64, eps=1e-05, affine=True)
+            (blocks): ModuleList(
+              (0): CnnBasicBlock(
+                (conv0): FanInInitReLULayer(
+                  (norm): GroupNorm(1, 64, eps=1e-05, affine=True)
+                  (layer): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+                )
+                (conv1): FanInInitReLULayer(
+                  (norm): GroupNorm(1, 64, eps=1e-05, affine=True)
+                  (layer): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+                )
+              )
+              (1): CnnBasicBlock(
+                (conv0): FanInInitReLULayer(
+                  (norm): GroupNorm(1, 64, eps=1e-05, affine=True)
+                  (layer): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+                )
+                (conv1): FanInInitReLULayer(
+                  (norm): GroupNorm(1, 64, eps=1e-05, affine=True)
+                  (layer): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+                )
+              )
+            )
+          )
+          (1): CnnDownStack(
+            (firstconv): FanInInitReLULayer(
+              (norm): GroupNorm(1, 64, eps=1e-05, affine=True)
+              (layer): Conv2d(64, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+            )
+            (n): GroupNorm(1, 128, eps=1e-05, affine=True)
+            (blocks): ModuleList(
+              (0): CnnBasicBlock(
+                (conv0): FanInInitReLULayer(
+                  (norm): GroupNorm(1, 128, eps=1e-05, affine=True)
+                  (layer): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+                )
+                (conv1): FanInInitReLULayer(
+                  (norm): GroupNorm(1, 128, eps=1e-05, affine=True)
+                  (layer): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+                )
+              )
+              (1): CnnBasicBlock(
+                (conv0): FanInInitReLULayer(
+                  (norm): GroupNorm(1, 128, eps=1e-05, affine=True)
+                  (layer): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+                )
+                (conv1): FanInInitReLULayer(
+                  (norm): GroupNorm(1, 128, eps=1e-05, affine=True)
+                  (layer): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+                )
+              )
+            )
+          )
+          (2): CnnDownStack(
+            (firstconv): FanInInitReLULayer(
+              (norm): GroupNorm(1, 128, eps=1e-05, affine=True)
+              (layer): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+            )
+            (n): GroupNorm(1, 128, eps=1e-05, affine=True)
+            (blocks): ModuleList(
+              (0): CnnBasicBlock(
+                (conv0): FanInInitReLULayer(
+                  (norm): GroupNorm(1, 128, eps=1e-05, affine=True)
+                  (layer): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+                )
+                (conv1): FanInInitReLULayer(
+                  (norm): GroupNorm(1, 128, eps=1e-05, affine=True)
+                  (layer): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+                )
+              )
+              (1): CnnBasicBlock(
+                (conv0): FanInInitReLULayer(
+                  (norm): GroupNorm(1, 128, eps=1e-05, affine=True)
+                  (layer): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+                )
+                (conv1): FanInInitReLULayer(
+                  (norm): GroupNorm(1, 128, eps=1e-05, affine=True)
+                  (layer): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+                )
+              )
+            )
+          )
+        )
+        (dense): FanInInitReLULayer(
+          (norm): LayerNorm((32768,), eps=1e-05, elementwise_affine=True)
+          (layer): Linear(in_features=32768, out_features=256, bias=False)
+        )
+      )
+      (linear): FanInInitReLULayer(
+        (norm): LayerNorm((256,), eps=1e-05, elementwise_affine=True)
+        (layer): Linear(in_features=256, out_features=1024, bias=False)
+      )
+    )
+    (recurrent_layer): ResidualRecurrentBlocks(
+      (blocks): ModuleList(
+        (0): ResidualRecurrentBlock(
+          (mlp0): FanInInitReLULayer(
+            (norm): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+            (layer): Linear(in_features=1024, out_features=4096, bias=False)
+          )
+          (mlp1): FanInInitReLULayer(
+            (layer): Linear(in_features=4096, out_features=1024, bias=True)
+          )
+          (pre_r_ln): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+          (r): MaskedAttention(
+            (orc_block): SelfAttentionLayer(
+              (q_layer): Linear(in_features=1024, out_features=1024, bias=True)
+              (k_layer): Linear(in_features=1024, out_features=1024, bias=False)
+              (v_layer): Linear(in_features=1024, out_features=1024, bias=False)
+              (proj_layer): Linear(in_features=1024, out_features=1024, bias=True)
+              (r_layer): Linear(in_features=1024, out_features=80, bias=True)
+            )
+          )
+        )
+        (1): ResidualRecurrentBlock(
+          (mlp0): FanInInitReLULayer(
+            (norm): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+            (layer): Linear(in_features=1024, out_features=4096, bias=False)
+          )
+          (mlp1): FanInInitReLULayer(
+            (layer): Linear(in_features=4096, out_features=1024, bias=True)
+          )
+          (pre_r_ln): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+          (r): MaskedAttention(
+            (orc_block): SelfAttentionLayer(
+              (q_layer): Linear(in_features=1024, out_features=1024, bias=True)
+              (k_layer): Linear(in_features=1024, out_features=1024, bias=False)
+              (v_layer): Linear(in_features=1024, out_features=1024, bias=False)
+              (proj_layer): Linear(in_features=1024, out_features=1024, bias=True)
+              (r_layer): Linear(in_features=1024, out_features=80, bias=True)
+            )
+          )
+        )
+        (2): ResidualRecurrentBlock(
+          (mlp0): FanInInitReLULayer(
+            (norm): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+            (layer): Linear(in_features=1024, out_features=4096, bias=False)
+          )
+          (mlp1): FanInInitReLULayer(
+            (layer): Linear(in_features=4096, out_features=1024, bias=True)
+          )
+          (pre_r_ln): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+          (r): MaskedAttention(
+            (orc_block): SelfAttentionLayer(
+              (q_layer): Linear(in_features=1024, out_features=1024, bias=True)
+              (k_layer): Linear(in_features=1024, out_features=1024, bias=False)
+              (v_layer): Linear(in_features=1024, out_features=1024, bias=False)
+              (proj_layer): Linear(in_features=1024, out_features=1024, bias=True)
+              (r_layer): Linear(in_features=1024, out_features=80, bias=True)
+            )
+          )
+        )
+        (3): ResidualRecurrentBlock(
+          (mlp0): FanInInitReLULayer(
+            (norm): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+            (layer): Linear(in_features=1024, out_features=4096, bias=False)
+          )
+          (mlp1): FanInInitReLULayer(
+            (layer): Linear(in_features=4096, out_features=1024, bias=True)
+          )
+          (pre_r_ln): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+          (r): MaskedAttention(
+            (orc_block): SelfAttentionLayer(
+              (q_layer): Linear(in_features=1024, out_features=1024, bias=True)
+              (k_layer): Linear(in_features=1024, out_features=1024, bias=False)
+              (v_layer): Linear(in_features=1024, out_features=1024, bias=False)
+              (proj_layer): Linear(in_features=1024, out_features=1024, bias=True)
+              (r_layer): Linear(in_features=1024, out_features=80, bias=True)
+            )
+          )
+        )
+      )
+    )
+    (lastlayer): FanInInitReLULayer(
+      (norm): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+      (layer): Linear(in_features=1024, out_features=1024, bias=False)
+    )
+    (final_ln): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+  )
+  (value_head): ScaledMSEHead(
+    (linear): Linear(in_features=1024, out_features=1, bias=True)
+    (normalizer): NormalizeEwma()
+  )
+  (pi_head): DictActionHead(
+    (camera): CategoricalActionHead(
+      (linear_layer): Linear(in_features=1024, out_features=121, bias=True)
+    )
+    (buttons): CategoricalActionHead(
+      (linear_layer): Linear(in_features=1024, out_features=8641, bias=True)
+    )
+  )
+)

@@ -1,0 +1,2 @@
+2022-11-24 01:24:56 codysoccerman-Aspire-E5-576G process_watcher[4892] INFO Process watcher started between parent 4779 and child 4837 
+2022-11-24 01:27:03 codysoccerman-Aspire-E5-576G process_watcher[4892] INFO Parent is not running, hence we need terminate the child.

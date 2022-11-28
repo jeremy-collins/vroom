@@ -1,0 +1,116 @@
+# input
+{"mouse": {"x": -811.0, "y": 658.0, "dx": 10.0, "dy": -10.0, "scaledX": -1451.0, "scaledY": 298.0, "dwheel": 0.0, "buttons": [0], "newButtons": []}, "keyboard": {"keys": ["key.keyboard.w"], "newKeys": [], "chars": ""}, "hotbar": 0, "tick": 150, "isGuiOpen": false}
+
+
+
+
+self.output_queues = [Queue(maxsize=max_queue_size) for _ in range(n_workers)]
+
+workitem = self.output_queues[self.n_steps_processed % self.n_workers].get(timeout=QUEUE_TIMEOUT)
+
+trajectory_id, frame, action = workitem
+
+
+return batch_frames, batch_actions, batch_episode_id
+
+data_loader = DataLoader(
+
+batch_actions) in enumerate(data_loader):
+
+for action in zip(batch_actions):
+
+print(action)
+
+# action output
+action:  {'ESC': 0, 'back': 0, 'drop': 0, 'forward': 1, 'hotbar.1': 0, 'hotbar.2': 0, 'hotbar.3': 0, 'hotbar.4': 0, 'hotbar.5': 0, 'hotbar.6': 0, 'hotbar.7': 0, 'hotbar.8': 0, 'hotbar.9': 0, 'inventory': 0, 'jump': 0, 'left': 0, 'right': 0, 'sneak': 0, 'sprint': 0, 'swapHands': 0, 'camera': array([0, 0]), 'attack': 1, 'use': 0, 'pickItem': 0}
+
+agent_action = agent._env_action_to_agent(action)
+print("agent_action: ", agent_action)
+
+
+
+
+
+
+
+
+
+# calculating loss
+
+
+# vpt_bc2
+policy.py MinecraftAgentPolicy: get_logprob_of_action: action: {'buttons': tensor([[288]], device='cuda:0'), 'camera': tensor([[60]], device='cuda:0')}
+policy.py MinecraftAgentPolicy: get_logprob_of_action: pd: {'camera': tensor([[[[   -3.657, ...., etc]]]], device='cuda:0',
+       grad_fn=<LogSoftmaxBackward>), 'buttons': tensor([[[[-20.4655,  -0.8734,  -7.1726,  ..., -20.4655, -20.4655,  -7.2045]]]],
+       device='cuda:0', grad_fn=<LogSoftmaxBackward>)}
+policy.py MinecraftAgentPolicy: get_logprob_of_action: ac: {'buttons': tensor([[[288]]], device='cuda:0'), 'camera': tensor([[[60]]], device='cuda:0')}
+
+
+# vpt_bc
+policy.py MinecraftAgentPolicy: get_logprob_of_action: action: {'actions': [0.5826020240783691, 0.6622381210327148, -0.9997113943099976, 0.9892427921295166]}
+policy.py MinecraftAgentPolicy: get_logprob_of_action: pd: {'buttons': tensor([[[[-1.6214, -2.3067, -0.9181, -1.1923]]]], device='cuda:0', grad_fn=<LogSoftmaxBackward>)}
+
+ac = tree_map(lambda x: x.unsqueeze(1), action) #error
+
+
+
+
+# imitaion.algorithms.bc.py
+
+@dataclasses.dataclass(frozen=True)
+class BehaviorCloningLossCalculator:
+    """Functor to compute the loss used in Behavior Cloning."""
+
+    ent_weight: float
+    l2_weight: float
+
+    def __call__(
+        self,
+        policy: policies.ActorCriticPolicy,
+        obs: Union[th.Tensor, np.ndarray],
+        acts: Union[th.Tensor, np.ndarray],
+    ) -> BCTrainingMetrics:
+        """Calculate the supervised learning loss used to train the behavioral clone.
+
+        Args:
+            policy: The actor-critic policy whose loss is being computed.
+            obs: The observations seen by the expert.
+            acts: The actions taken by the expert.
+
+        Returns:
+            A BCTrainingMetrics object with the loss and all the components it
+            consists of.
+        """
+        _, log_prob, entropy = policy.evaluate_actions(obs, acts)
+        prob_true_act = th.exp(log_prob).mean()
+        log_prob = log_prob.mean()
+        entropy = entropy.mean()
+
+        l2_norms = [th.sum(th.square(w)) for w in policy.parameters()]
+        l2_norm = sum(l2_norms) / 2  # divide by 2 to cancel with gradient of square
+
+        ent_loss = -self.ent_weight * entropy
+        neglogp = -log_prob
+        l2_loss = self.l2_weight * l2_norm
+        loss = neglogp + ent_loss + l2_loss
+
+        return BCTrainingMetrics(
+            neglogp=neglogp,
+            entropy=entropy,
+            ent_loss=ent_loss,
+            prob_true_act=prob_true_act,
+            l2_norm=l2_norm,
+            l2_loss=l2_loss,
+            loss=loss,
+        )
+
+
+
+
+
+
+
+
+agent.py get_action agent_action:  {'buttons': tensor([[5104]], device='cuda:0'), 'camera': tensor([[83]], device='cuda:0')}
+agent.py get_action minerl_action:  {'attack': array([0]), 'back': array([1]), 'forward': array([0]), 'jump': array([0]), 'left': array([0]), 'right': array([1]), 'sneak': array([0]), 'sprint': array([0]), 'use': array([1]), 'drop': array([0]), 'inventory': array([0]), 'hotbar.1': array([0]), 'hotbar.2': array([0]), 'hotbar.3': array([0]), 'hotbar.4': array([0]), 'hotbar.5': array([1]), 'hotbar.6': array([0]), 'hotbar.7': array([0]), 'hotbar.8': array([0]), 'hotbar.9': array([0]), 'camera': array([[0., 0.]])}
+

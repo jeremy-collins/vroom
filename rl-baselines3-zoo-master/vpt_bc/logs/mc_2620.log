@@ -1,0 +1,76 @@
+[23:17:23] [Thread-4/INFO]: [STDOUT]: SERVER enter state: DORMANT
+[23:17:23] [EnvServerSocketHandler/INFO]: Received Mission token 1f3c411d-65a2-4fb5-8817-b6b4e103ec1f:0:0:1:true
+[23:17:23] [EnvServerSocketHandler/INFO]: Received mission init command  <MissionInit xmlns="http://ProjectMalmo.microsoft.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" SchemaVersion="" PlatformVersion="0.37.0"><Mission><About><Summary>MineRLBasaltFindCave-v0</Summary></About><ModSettings><MsPerTick>50</MsPerTick></ModSettings><ServerSection><ServerInitialConditions><Time><AllowPassageOfTime>false</AllowPassageOfTime></Time><AllowSpawning>true</AllowSpawning></ServerInitialConditions><ServerHandlers><DefaultWorldGenerator forceReset="true" generatorOptions="{}"/><ServerQuitFromTimeUp timeLimitMs="180000" description="out_of_time"/><ServerQuitWhenAnyAgentFinishes/></ServerHandlers></ServerSection><AgentSection mode="Survival"><Name>MineRLAgent0</Name><AgentStart><LowLevelInputs>true</LowLevelInputs><GuiScale>1.0</GuiScale><GammaSetting>2.0</GammaSetting><FOVSetting>70.0</FOVSetting><FakeCursorSize>16</FakeCursorSize><Inventory/><PreferredSpawnBiome>plains</PreferredSpawnBiome><DoneOnDeath>true</DoneOnDeath></AgentStart><AgentHandlers><FileBasedPerformanceProducer/><PauseCommand/><VideoProducer want_depth="false"><Width>640</Width><Height>360</Height></VideoProducer><HumanLevelCommands/><CameraCommands/></AgentHandlers></AgentSection></Mission><ExperimentUID>1f3c411d-65a2-4fb5-8817-b6b4e103ec1f</ExperimentUID><ClientRole>0</ClientRole><ClientAgentConnection><ClientIPAddress>127.0.0.1</ClientIPAddress><ClientMissionControlPort>0</ClientMissionControlPort><ClientCommandsPort>0</ClientCommandsPort><AgentIPAddress>127.0.0.1</AgentIPAddress><AgentMissionControlPort>0</AgentMissionControlPort><AgentVideoPort>0</AgentVideoPort><AgentDepthPort>0</AgentDepthPort><AgentLuminancePort>0</AgentLuminancePort><AgentObservationsPort>0</AgentObservationsPort><AgentRewardsPort>0</AgentRewardsPort><AgentColourMapPort>0</AgentColourMapPort></ClientAgentConnection></MissionInit>
+[23:17:24] [Render thread/INFO]: [STDOUT]: *** creating fake mouse cursor ***
+[23:17:26] [EnvServerSocketHandler/INFO]: [STDOUT]: Setting width, height to 640, 360
+[23:17:26] [EnvServerSocketHandler/INFO]: [STDOUT]: Gamma: 2.0
+[23:17:26] [EnvServerSocketHandler/INFO]: [STDOUT]: FOV: 70.0
+[23:17:26] [EnvServerSocketHandler/INFO]: [STDOUT]: GuiScale: 1.0
+[23:17:26] [Render thread/INFO]: [STDOUT]: Seed not provided, generating random one: 1097365867515467742
+[23:17:30] [Render thread/WARN]: Ambiguity between arguments [teleport, destination] and [teleport, targets] with inputs: [Player, 0123, @e, dd12be42-52a9-4a91-a8a1-11c01849e498]
+[23:17:30] [Render thread/WARN]: Ambiguity between arguments [teleport, location] and [teleport, destination] with inputs: [0.1 -0.5 .9, 0 0 0]
+[23:17:30] [Render thread/WARN]: Ambiguity between arguments [teleport, location] and [teleport, targets] with inputs: [0.1 -0.5 .9, 0 0 0]
+[23:17:30] [Render thread/WARN]: Ambiguity between arguments [teleport, targets] and [teleport, destination] with inputs: [Player, 0123, dd12be42-52a9-4a91-a8a1-11c01849e498]
+[23:17:30] [Render thread/WARN]: Ambiguity between arguments [teleport, targets, location] and [teleport, targets, destination] with inputs: [0.1 -0.5 .9, 0 0 0]
+[23:17:30] [Render thread/INFO]: Reloading ResourceManager: Default
+[23:17:31] [Render thread/INFO]: Loaded 7 recipes
+[23:17:32] [Render thread/INFO]: Loaded 927 advancements
+[23:17:34] [Render thread/INFO]: Environment: authHost='https://authserver.mojang.com', accountsHost='https://api.mojang.com', sessionHost='https://sessionserver.mojang.com', servicesHost='https://api.minecraftservices.com', name='PROD'
+[23:17:34] [Render thread/INFO]: Starting integrated minecraft server version 1.16.5
+[23:17:34] [Render thread/INFO]: Generating keypair
+[23:17:42] [Render thread/INFO]: Preparing start region for dimension minecraft:overworld
+[23:18:03] [Render thread/INFO]: Changing view distance to 11, from 10
+[23:18:03] [Render thread/INFO]: MineRLAgent0[local:E:ba469b66] logged in with entity id 172 at (738.5, 65.0, -341.5)
+[23:18:03] [Render thread/INFO]: MineRLAgent0 joined the game
+[23:18:04] [Render thread/INFO]: Preparing spawn area: 4%
+[23:18:04] [Render thread/INFO]: Time elapsed: 4 ms
+[23:18:04] [Render thread/INFO]: [STDOUT]: Starting new video null
+[23:18:04] [Render thread/INFO]: Saving and pausing game...
+[23:18:04] [Render thread/INFO]: Saving chunks for level 'ServerLevel[mcpworld5dc9c6c685b5]'/minecraft:overworld
+[23:18:05] [Render thread/INFO]: Saving chunks for level 'ServerLevel[mcpworld5dc9c6c685b5]'/minecraft:the_nether
+[23:18:05] [Render thread/INFO]: Saving chunks for level 'ServerLevel[mcpworld5dc9c6c685b5]'/minecraft:the_end
+[23:18:06] [Worker-Main-15/WARN]: Couldn't look up profile properties for com.mojang.authlib.GameProfile@7493962a[id=3db42575-2d30-381e-b767-ea78178345ae,name=MineRLAgent0,properties={},legacy=false]
+com.mojang.authlib.exceptions.AuthenticationUnavailableException: Cannot contact authentication server
+	at com.mojang.authlib.yggdrasil.YggdrasilAuthenticationService.makeRequest(YggdrasilAuthenticationService.java:125) ~[mcprec-6.13.jar:?]
+	at com.mojang.authlib.yggdrasil.YggdrasilAuthenticationService.makeRequest(YggdrasilAuthenticationService.java:99) ~[mcprec-6.13.jar:?]
+	at com.mojang.authlib.yggdrasil.YggdrasilMinecraftSessionService.fillGameProfile(YggdrasilMinecraftSessionService.java:186) ~[mcprec-6.13.jar:?]
+	at com.mojang.authlib.yggdrasil.YggdrasilMinecraftSessionService$1.load(YggdrasilMinecraftSessionService.java:61) ~[mcprec-6.13.jar:?]
+	at com.mojang.authlib.yggdrasil.YggdrasilMinecraftSessionService$1.load(YggdrasilMinecraftSessionService.java:58) ~[mcprec-6.13.jar:?]
+	at com.google.common.cache.LocalCache$LoadingValueReference.loadFuture(LocalCache.java:3716) ~[mcprec-6.13.jar:?]
+	at com.google.common.cache.LocalCache$Segment.loadSync(LocalCache.java:2424) ~[mcprec-6.13.jar:?]
+	at com.google.common.cache.LocalCache$Segment.lockedGetOrLoad(LocalCache.java:2298) ~[mcprec-6.13.jar:?]
+	at com.google.common.cache.LocalCache$Segment.get(LocalCache.java:2211) ~[mcprec-6.13.jar:?]
+	at com.google.common.cache.LocalCache.get(LocalCache.java:4154) ~[mcprec-6.13.jar:?]
+	at com.google.common.cache.LocalCache.getOrLoad(LocalCache.java:4158) ~[mcprec-6.13.jar:?]
+	at com.google.common.cache.LocalCache$LocalLoadingCache.get(LocalCache.java:5147) ~[mcprec-6.13.jar:?]
+	at com.google.common.cache.LocalCache$LocalLoadingCache.getUnchecked(LocalCache.java:5153) ~[mcprec-6.13.jar:?]
+	at com.mojang.authlib.yggdrasil.YggdrasilMinecraftSessionService.fillProfileProperties(YggdrasilMinecraftSessionService.java:176) ~[mcprec-6.13.jar:?]
+	at net.minecraft.client.Minecraft.getProfileProperties(Minecraft.java:2263) ~[mcprec-6.13.jar:?]
+	at net.minecraft.client.resources.SkinManager.lambda$loadProfileTextures$4(SkinManager.java:96) ~[mcprec-6.13.jar:?]
+	at java.util.concurrent.ForkJoinTask$RunnableExecuteAction.exec(ForkJoinTask.java:1402) [?:1.8.0_352]
+	at java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:289) [?:1.8.0_352]
+	at java.util.concurrent.ForkJoinPool$WorkQueue.runTask(ForkJoinPool.java:1056) [?:1.8.0_352]
+	at java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1692) [?:1.8.0_352]
+	at java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:175) [?:1.8.0_352]
+Caused by: java.net.UnknownHostException: sessionserver.mojang.com
+	at java.net.AbstractPlainSocketImpl.connect(AbstractPlainSocketImpl.java:184) ~[?:1.8.0_352]
+	at java.net.SocksSocketImpl.connect(SocksSocketImpl.java:392) ~[?:1.8.0_352]
+	at java.net.Socket.connect(Socket.java:607) ~[?:1.8.0_352]
+	at sun.security.ssl.SSLSocketImpl.connect(SSLSocketImpl.java:293) ~[?:1.8.0_352]
+	at sun.net.NetworkClient.doConnect(NetworkClient.java:175) ~[?:1.8.0_352]
+	at sun.net.www.http.HttpClient.openServer(HttpClient.java:463) ~[?:1.8.0_352]
+	at sun.net.www.http.HttpClient.openServer(HttpClient.java:558) ~[?:1.8.0_352]
+	at sun.net.www.protocol.https.HttpsClient.<init>(HttpsClient.java:264) ~[?:1.8.0_352]
+	at sun.net.www.protocol.https.HttpsClient.New(HttpsClient.java:367) ~[?:1.8.0_352]
+	at sun.net.www.protocol.https.AbstractDelegateHttpsURLConnection.getNewHttpClient(AbstractDelegateHttpsURLConnection.java:203) ~[?:1.8.0_352]
+	at sun.net.www.protocol.http.HttpURLConnection.plainConnect0(HttpURLConnection.java:1207) ~[?:1.8.0_352]
+	at sun.net.www.protocol.http.HttpURLConnection.plainConnect(HttpURLConnection.java:1056) ~[?:1.8.0_352]
+	at sun.net.www.protocol.https.AbstractDelegateHttpsURLConnection.connect(AbstractDelegateHttpsURLConnection.java:189) ~[?:1.8.0_352]
+	at sun.net.www.protocol.http.HttpURLConnection.getInputStream0(HttpURLConnection.java:1572) ~[?:1.8.0_352]
+	at sun.net.www.protocol.http.HttpURLConnection.getInputStream(HttpURLConnection.java:1500) ~[?:1.8.0_352]
+	at sun.net.www.protocol.https.HttpsURLConnectionImpl.getInputStream(HttpsURLConnectionImpl.java:268) ~[?:1.8.0_352]
+	at com.mojang.authlib.HttpAuthenticationService.performGetRequest(HttpAuthenticationService.java:140) ~[mcprec-6.13.jar:?]
+	at com.mojang.authlib.yggdrasil.YggdrasilAuthenticationService.makeRequest(YggdrasilAuthenticationService.java:104) ~[mcprec-6.13.jar:?]
+	... 20 more
+[23:18:06] [Render thread/INFO]: Loaded 0 advancements
+[23:18:15] [Render thread/INFO]: Loaded 7 advancements
