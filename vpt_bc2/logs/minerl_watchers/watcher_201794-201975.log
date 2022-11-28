@@ -1,9 +1,0 @@
-2022-11-28 04:17:42 codysoccerman-Aspire-E5-576G process_watcher[202030] INFO Process watcher started between parent 201794 and child 201975 
-2022-11-28 04:19:08 codysoccerman-Aspire-E5-576G process_watcher[202030] INFO Parent is not running, hence we need terminate the child.
-2022-11-28 04:19:08 codysoccerman-Aspire-E5-576G process_watcher[202030] INFO About to reap process tree of 201975:launchClient.sh:/usr/bin/bash i sleeping, owner 943, printing process tree status in termination order:
-2022-11-28 04:19:08 codysoccerman-Aspire-E5-576G process_watcher[202030] INFO 	-201978:java:/usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java i sleeping, owner 201975
-2022-11-28 04:19:08 codysoccerman-Aspire-E5-576G process_watcher[202030] INFO 	-201975:launchClient.sh:/usr/bin/bash i sleeping, owner 943
-2022-11-28 04:19:08 codysoccerman-Aspire-E5-576G process_watcher[202030] INFO Trying to SIGTERM 201978:java:/usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java i sleeping, owner 201975
-2022-11-28 04:19:13 codysoccerman-Aspire-E5-576G process_watcher[202030] INFO Process 201978 survived SIGTERM; trying SIGKILL on 201978:java:/usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java i sleeping, owner 201975
-2022-11-28 04:19:13 codysoccerman-Aspire-E5-576G process_watcher[202030] INFO Process psutil.Process(pid=201978, name='java', status='terminated', started='04:17:40') terminated with exit code None
-2022-11-28 04:19:13 codysoccerman-Aspire-E5-576G process_watcher[202030] INFO Process psutil.Process(pid=201975, name='launchClient.sh', status='terminated', started='04:17:40') does not exist or is zombie.
