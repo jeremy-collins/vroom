@@ -14,6 +14,7 @@ from PIL import Image, ImageDraw
 from utils import Utils
 
 from roboturk_loader_observations import RoboTurkObs
+from panda_loader_lstm import Panda
 
 class TrainerBC():
     def __init__(self, ent_weight=0, l2_weight=0):
@@ -118,7 +119,7 @@ class TrainerBC():
                 l1 = nn.L1Loss()
                 out = l1(pred, y_expected)
                 print('l1 loss: {}'.format(out))
-                
+
 
         return total_loss / len(dataloader)
 
@@ -185,7 +186,10 @@ if __name__ == "__main__":
 
     trainer = TrainerBC()
 
-    model = BC_custom(input_size=26, output_size=4, net_arch=[32,32])
+    if (args.dataset == 'roboturk'):
+        model = BC_custom(input_size=26, output_size=4, net_arch=[32,32])
+    elif (args.dataset == 'panda_img'):
+        model = BC_custom(input_size=26, output_size=4, net_arch=[32,32], cnn=True)
     opt = optim.Adam(model.parameters(), lr=lr)
     try:
         model.load_state_dict(torch.load('./checkpoints/model_{}.pt'.format(args.name)))
@@ -200,6 +204,14 @@ if __name__ == "__main__":
         train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=False, sampler=train_sampler, num_workers=num_workers)
 
         test_dataset = RoboTurkObs(num_frames=frames_per_clip, stride=stride, dir=args.folder, stage='test', shuffle=True)
+        test_sampler = RandomSampler(test_dataset, replacement=False, num_samples=int(len(test_dataset) * epoch_ratio))
+        test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False, sampler=test_sampler, num_workers=num_workers)
+    elif args.dataset == 'panda_img':
+        train_dataset = Panda(num_frames=frames_per_clip, stride=stride, dir=args.folder, stage='train', shuffle=True)
+        train_sampler = RandomSampler(train_dataset, replacement=False, num_samples=int(len(train_dataset) * epoch_ratio))
+        train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=False, sampler=train_sampler, num_workers=num_workers)
+
+        test_dataset = Panda(num_frames=frames_per_clip, stride=stride, dir=args.folder, stage='test', shuffle=True)
         test_sampler = RandomSampler(test_dataset, replacement=False, num_samples=int(len(test_dataset) * epoch_ratio))
         test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False, sampler=test_sampler, num_workers=num_workers)
 
