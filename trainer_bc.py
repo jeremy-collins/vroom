@@ -2,9 +2,11 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, RandomSampler
+from torch.utils.tensorboard import SummaryWriter
 import math
 import numpy as np
 from bc_mlp import BC_custom
+from simple_mlp import SimpleMLP
 import torchvision.transforms as transforms
 import argparse
 import os
@@ -22,6 +24,7 @@ class TrainerBC():
         print('device: ', self.device)
         self.ent_weight = ent_weight
         self.l2_weight = l2_weight
+        self.writer = SummaryWriter()
         # self.utils = Utils()
         # self.utils.init_resnet()
         # self.utils.init_resnet(freeze=False)
@@ -35,12 +38,13 @@ class TrainerBC():
     #     return latents
 
 
-    def train_loop(self, model, opt, dataloader):
+    def train_loop(self, model, loss_fn, opt, dataloader):
         model = model.to(self.device)
         model.train()
         total_loss = 0
 
         for i, batch in enumerate(tqdm(dataloader)):
+            model.train()
             X = batch['data']
             X = torch.tensor(X).to(self.device)
             # X = X.clone().detach().to(self.device)
@@ -50,9 +54,18 @@ class TrainerBC():
             y = torch.tensor(y).to(self.device)
 
             _, log_prob, entropy = model.evaluate_actions(X, y)
+            # pred = model(X)
 
             y_expected = batch['y']
             y_expected = torch.tensor(y_expected).to(self.device)
+
+            # loss = loss_fn(pred, y_expected[:,None,:])
+            # opt.zero_grad()
+            # loss.backward()
+            # opt.step()
+            # total_loss += loss.detach().item()
+            # print('expected: {}'.format(y_expected[0,:]))
+            # print('pred: {}'.format(pred[0,:]))
 
             prob_true_act = torch.exp(log_prob).mean()
             log_prob = log_prob.mean()
@@ -74,9 +87,23 @@ class TrainerBC():
 
             total_loss += loss.detach().item()
 
+            if (i % 100 == 0):
+                model.eval()
+                pred, values, log_prob = model(X)
+                print('expected: {}'.format(y_expected[0,:]))
+                print('pred: {}'.format(pred[0,:]))
+                print('values: {}'.format(values[0,:]))
+                print('log_prob: {}'.format(log_prob[0]))
+                print('entropy: {}'.format(entropy))
+                print('l2norms: {}'.format(l2_norm))
+
+                l1 = nn.L1Loss()
+                out = l1(pred, y_expected)
+                print('l1: {}'.format(out))
+
         return total_loss / len(dataloader)
 
-    def validation_loop(self, model, dataloader):
+    def validation_loop(self, model, loss_fn, dataloader):
         model.eval()
         total_loss = 0
         with torch.no_grad():
@@ -90,9 +117,13 @@ class TrainerBC():
                 y = torch.tensor(y).to(self.device)
 
                 _, log_prob, entropy = model.evaluate_actions(X, y)
+                # pred = model(X)
 
                 y_expected = batch['y']
                 y_expected = torch.tensor(y_expected).to(self.device)
+
+                # loss = loss_fn(pred, y_expected[:,None,:])
+                # total_loss += loss.detach().item()
 
                 prob_true_act = torch.exp(log_prob).mean()
                 log_prob = log_prob.mean()
@@ -110,20 +141,22 @@ class TrainerBC():
 
                 total_loss += loss.detach().item()
 
-                pred, values, log_prob = model(X)
-                print('expected: {}'.format(y_expected[0,:]))
-                print('pred: {}'.format(pred[0,:]))
-                print('values: {}'.format(values[0,:]))
-                print('log_prob: {}'.format(log_prob[0]))
+                # pred, values, log_prob = model(X)
+                # print('expected: {}'.format(y_expected[0,:]))
+                # print('pred: {}'.format(pred[0,:]))
+                # print('values: {}'.format(values[0,:]))
+                # print('log_prob: {}'.format(log_prob[0]))
+                # print('entropy: {}'.format(entropy))
+                # print('l2norms: {}'.format(l2_norm))
 
-                l1 = nn.L1Loss()
-                out = l1(pred, y_expected)
-                print('l1 loss: {}'.format(out))
+                # l1 = nn.L1Loss()
+                # out = l1(pred, y_expected)
+                # print('l1: {}'.format(out))
 
 
         return total_loss / len(dataloader)
 
-    def fit(self, model, opt, train_dataloader, val_dataloader, epochs):
+    def fit(self, model, loss_fn, opt, train_dataloader, val_dataloader, epochs):
         # Used for plotting later on
         train_loss_list, validation_loss_list = [], []
 
@@ -132,10 +165,10 @@ class TrainerBC():
             if epochs > 1:
                 print("-"*25, f"Epoch {epoch + 1}","-"*25)
 
-            train_loss = self.train_loop(model, opt, train_dataloader)
+            train_loss = self.train_loop(model, loss_fn, opt, train_dataloader)
             train_loss_list += [train_loss]
 
-            validation_loss = self.validation_loop(model, val_dataloader)
+            validation_loss = self.validation_loop(model, loss_fn, val_dataloader)
             validation_loss_list += [validation_loss]
 
             print(f"Training loss: {train_loss:.4f}")
@@ -173,10 +206,10 @@ if __name__ == "__main__":
     frames_to_predict = 1 # must be <= frames_per_clip
     stride = 1 # number of frames to shift when loading clips
     batch_size = 32
-    epoch_ratio = .1 # to sample just a portion of the dataset
-    epochs = 50
+    epoch_ratio = 1 # to sample just a portion of the dataset
+    epochs = 200
     lr = 1e-3
-    num_workers = 4
+    num_workers = 10
 
     dim_model = 2048
     num_heads = 8
@@ -184,12 +217,16 @@ if __name__ == "__main__":
     num_decoder_layers = 4
     dropout_p = 0
 
-    trainer = TrainerBC()
+    l2_weight = 1e-6
+    ent_weight = 0
+
+    trainer = TrainerBC(l2_weight=l2_weight, ent_weight=ent_weight)
 
     if (args.dataset == 'roboturk'):
         model = BC_custom(input_size=26, output_size=4, net_arch=[32,32])
+        # model = SimpleMLP(input_size=26, output_size=4, net_arch=[64,128,128,64])
     elif (args.dataset == 'panda_img'):
-        model = BC_custom(input_size=26, output_size=4, net_arch=[32,32], cnn=True)
+        model = BC_custom(input_size=64, output_size=4, net_arch=[32,32], cnn=True)
     opt = optim.Adam(model.parameters(), lr=lr)
     try:
         model.load_state_dict(torch.load('./checkpoints/model_{}.pt'.format(args.name)))
@@ -197,7 +234,7 @@ if __name__ == "__main__":
     except:
         print('saved model not found')
         pass
-    # loss_fn = nn.MSELoss() # TODO: change this to mse + condition + gradient difference
+    loss_fn = nn.L1Loss() # TODO: change this to mse + condition + gradient difference
     if args.dataset == 'roboturk':
         train_dataset = RoboTurkObs(num_frames=frames_per_clip, stride=stride, dir=args.folder, stage='train', shuffle=True)
         train_sampler = RandomSampler(train_dataset, replacement=False, num_samples=int(len(train_dataset) * epoch_ratio))
@@ -207,11 +244,11 @@ if __name__ == "__main__":
         test_sampler = RandomSampler(test_dataset, replacement=False, num_samples=int(len(test_dataset) * epoch_ratio))
         test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False, sampler=test_sampler, num_workers=num_workers)
     elif args.dataset == 'panda_img':
-        train_dataset = Panda(num_frames=frames_per_clip, stride=stride, dir=args.folder, stage='train', shuffle=True)
+        train_dataset = Panda(num_frames=frames_per_clip, stride=stride, dir=args.folder, stage='train', shuffle=True, stack=False)
         train_sampler = RandomSampler(train_dataset, replacement=False, num_samples=int(len(train_dataset) * epoch_ratio))
         train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=False, sampler=train_sampler, num_workers=num_workers)
 
-        test_dataset = Panda(num_frames=frames_per_clip, stride=stride, dir=args.folder, stage='test', shuffle=True)
+        test_dataset = Panda(num_frames=frames_per_clip, stride=stride, dir=args.folder, stage='test', shuffle=True, stack=False)
         test_sampler = RandomSampler(test_dataset, replacement=False, num_samples=int(len(test_dataset) * epoch_ratio))
         test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False, sampler=test_sampler, num_workers=num_workers)
 
@@ -220,11 +257,15 @@ if __name__ == "__main__":
         epoch = 1
         while True:
             print("-"*25, f"Epoch {epoch}","-"*25)
-            train_loss_list, validation_loss_list = trainer.fit(model=model, opt=opt, train_dataloader=train_loader, val_dataloader=test_loader, epochs=1)
+            train_loss_list, validation_loss_list = trainer.fit(model=model, loss_fn=loss_fn, opt=opt, train_dataloader=train_loader, val_dataloader=test_loader, epochs=1)
             if validation_loss_list[-1] < best_loss:
                 best_loss = validation_loss_list[-1]
                 torch.save(model.state_dict(), './checkpoints/model_' + args.name + '.pt')
                 print('model saved as model_' + str(args.name) + '.pt')
             epoch += 1
+
+            trainer.writer.add_scalar("Loss/train", train_loss_list[0], epoch)
+            trainer.writer.add_scalar("Loss/validation", validation_loss_list[0], epoch)
+            trainer.writer.flush()
     else:
-        trainer.fit(model=model, opt=opt, train_dataloader=train_loader, val_dataloader=test_loader, epochs=epochs)
+        trainer.fit(model=model, loss_fn=loss_fn, opt=opt, train_dataloader=train_loader, val_dataloader=test_loader, epochs=epochs)

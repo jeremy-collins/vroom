@@ -12,13 +12,14 @@ import os
 import glob
 
 class Panda(data.Dataset):
-    def __init__(self, num_frames=5, stride=1, dir='/media/jer/data/bouncing_ball_1000_1/test1_bouncing_ball', stage='raw', shuffle=True, frame_size=(224, 224)):
+    def __init__(self, num_frames=5, stride=1, dir='/media/jer/data/bouncing_ball_1000_1/test1_bouncing_ball', stage='raw', shuffle=True, frame_size=(224, 224), stack=True):
         self.stage = stage
         self.dir = os.path.join(dir, stage)
         self.num_frames = num_frames
         self.stride = stride
         self.frame_size = frame_size
         self.indices, self.dataset = self.get_data(shuffle=shuffle)
+        self.stack = stack
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         # model = Transformer()
         # self.SOS_token = torch.ones((1, model.dim_model), dtype=torch.float32, device=device) * 2
@@ -53,7 +54,10 @@ class Panda(data.Dataset):
             frames.append(frame)
 
         # # creating tensor with requires_grad=False
-        frames = torch.stack(frames, dim=0)
+        if (self.stack): # a hack so we can toggle between sequences and single frames
+            frames = torch.stack(frames, dim=0)
+        else:
+            frames = frames[0]
         frames = frames.detach()
         frames.requires_grad = False
 
