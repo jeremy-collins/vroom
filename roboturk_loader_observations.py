@@ -111,10 +111,10 @@ class RoboTurkObs(data.Dataset):
                 # (parent+index, name)
                 if ('observations' in parent):
                     parent_index = parent.split('_')[-1]
-                    obs_names.append((int(parent_index+file[-8:-4]), os.path.join(dir, file)))
+                    obs_names.append((int(parent_index+file[-9:-4]), os.path.join(dir, file)))
                 if ('actions' in parent):
                     parent_index = parent.split('_')[-1]
-                    act_names.append((int(parent_index+file[-8:-4]), os.path.join(dir, file)))
+                    act_names.append((int(parent_index+file[-9:-4]), os.path.join(dir, file)))
 
         # sorting the names numerically. first 4 digits are folder and last 3 are file
         obs_names = sorted(obs_names, key=lambda x: x[0])
@@ -142,7 +142,7 @@ class RoboTurkObs(data.Dataset):
                         index_list.append(obs_names[i+k*self.stride][0]) # getting frame i, i+self.stride, i+2*self.stride, ... (i+1)+self.stride, (i+1)+2*self.stride, ... etc
                         frame_names.append(obs_names[i+k*self.stride][1])
 
-                    if (not np.all(np.diff(index_list) == self.stride) or index_list[-1] + 1 != obs_names[i+k*self.stride+1][0]):
+                    if (not np.all(np.diff(index_list) == self.stride)):
                         # frames arent contiguous
                         # we cant use the last sequence in a video because we need a label for the seq+1 action
                         continue
@@ -151,7 +151,7 @@ class RoboTurkObs(data.Dataset):
                     indices.append(index_list)
 
                     # each element is a list of frame names with length num_frames and skipping frames according to stride
-                    dataset.append((frame_names, act_names[i+k*self.stride+1][1]))
+                    dataset.append((frame_names, act_names[i+k*self.stride][1]))
 
                     # print('frame_names: ', frame_names)
 
@@ -160,11 +160,11 @@ class RoboTurkObs(data.Dataset):
         else:
             dataset = np.array(dataset)
 
-        return indices[0:2], dataset[0:2]
+        return indices, dataset
 
 
 if __name__ == '__main__':
-    dataset = RoboTurkObs(num_frames=5, stride=1, dir='pandapickandplace/data', stage='train', shuffle=True)
+    dataset = RoboTurkObs(num_frames=20, stride=1, dir='PandaPickAndPlace-v1/data', stage='train', shuffle=True)
     # dataset = RoboTurk(num_frames=5, stride=1, dir='/media/jer/Crucial X6/data/RoboTurk_videos/bins-Bread', stage='train', shuffle=True)
     # test_sampler = RandomSampler(dataset, replacement=False, num_samples=int(len(dataset) * 0.01))
     test_loader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False, num_workers=0)

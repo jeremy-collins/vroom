@@ -109,6 +109,17 @@ class TrainerBC():
 
                 total_loss += loss.detach().item()
 
+                pred, values, log_prob = model(X)
+                print('expected: {}'.format(y_expected[0,:]))
+                print('pred: {}'.format(pred[0,:]))
+                print('values: {}'.format(values[0,:]))
+                print('log_prob: {}'.format(log_prob[0]))
+
+                l1 = nn.L1Loss()
+                out = l1(pred, y_expected)
+                print('l1 loss: {}'.format(out))
+                
+
         return total_loss / len(dataloader)
 
     def fit(self, model, opt, train_dataloader, val_dataloader, epochs):
@@ -161,10 +172,10 @@ if __name__ == "__main__":
     frames_to_predict = 1 # must be <= frames_per_clip
     stride = 1 # number of frames to shift when loading clips
     batch_size = 32
-    epoch_ratio = 1 # to sample just a portion of the dataset
+    epoch_ratio = .1 # to sample just a portion of the dataset
     epochs = 50
-    lr = 1e-4
-    num_workers = 6
+    lr = 1e-3
+    num_workers = 4
 
     dim_model = 2048
     num_heads = 8
@@ -176,6 +187,12 @@ if __name__ == "__main__":
 
     model = BC_custom(input_size=26, output_size=4, net_arch=[32,32])
     opt = optim.Adam(model.parameters(), lr=lr)
+    try:
+        model.load_state_dict(torch.load('./checkpoints/model_{}.pt'.format(args.name)))
+        print('loaded model')
+    except:
+        print('saved model not found')
+        pass
     # loss_fn = nn.MSELoss() # TODO: change this to mse + condition + gradient difference
     if args.dataset == 'roboturk':
         train_dataset = RoboTurkObs(num_frames=frames_per_clip, stride=stride, dir=args.folder, stage='train', shuffle=True)

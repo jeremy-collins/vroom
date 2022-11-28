@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-import torch.distributions
+import torch.distributions as distributions
 from functools import partial
 import numpy as np
 
@@ -56,7 +56,7 @@ class BC_custom(nn.Module):
             }
 
             for module, gain in module_gains.items():
-                module.apply(partial(self.init_weights gain=gain))
+                module.apply(partial(self.init_weights, gain=gain))
 
     def forward(self, X):
         features = self.extract_features(X)
@@ -64,14 +64,14 @@ class BC_custom(nn.Module):
         values = self.value_net(latent)
         mean_actions = self.action_net(latent)
         self.proba_distribution(mean_actions, self.log_std) # self._get_action_dist_from_latent(latent_pi)
-        if (self.determinstic):
+        if (self.deterministic):
             # mode
             actions = self.distribution.mean()
         else:
             # random sample
             actions = self.distribution.rsample()
         log_prob = self.sum_independent_dims(self.distribution.log_prob(actions))
-        actions = actions.reshape((-1,) + self.output_size)
+        # actions = actions.reshape((-1,) + self.output_size) # not sure what this does
         return actions, values, log_prob
 
     def proba_distribution(self, mean_actions, log_std):
@@ -88,7 +88,7 @@ class BC_custom(nn.Module):
         entropy = self.sum_independent_dims(self.distribution.entropy())
         return values, log_prob, entropy
 
-    def sum_independent_dims(tensor):
+    def sum_independent_dims(self, tensor):
         """
         Continuous actions are usually considered to be independent,
         so we can sum components of the ``log_prob`` or the entropy.
