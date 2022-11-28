@@ -26,7 +26,7 @@ class BC_MLP(nn.Module):
         return self.layers(X)
 
 class BC_custom(nn.Module):
-    def __init__(self, input_size, output_size, net_arch, log_std_init=0, deterministic=False, ortho_init=True):
+    def __init__(self, input_size, output_size, net_arch, log_std_init=0, deterministic=False, ortho_init=True, cnn=False):
         super().__init__()
         self.input_size = input_size
         self.output_size = output_size
@@ -36,7 +36,16 @@ class BC_custom(nn.Module):
 
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-        self.extract_features = nn.Flatten() # this can be a CNN for images
+        if (cnn):
+            self.extract_features = torch.hub.load('pytorch/vision:v0.6.0', 'resnet50', pretrained=True)
+            # freeze everything but last layer
+            for param in self.extract_features.parameters():
+                param.requires_grad = False
+            self.extract_features.fc = nn.Linear(2048, self.input_size)
+            for param in self.extract_features.fc.parameters():
+                param.requires_grad = True
+        else:
+            self.extract_features = nn.Flatten() # this can be a CNN for images
 
         self.action_net = nn.Linear(net_arch[-1], self.output_size)
         self.value_net = nn.Linear(net_arch[-1], 1)

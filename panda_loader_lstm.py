@@ -12,7 +12,7 @@ import os
 import glob
 
 class Panda(data.Dataset):
-    def __init__(self, num_frames=5, stride=1, dir='/media/jer/data/bouncing_ball_1000_1/test1_bouncing_ball', stage='raw', shuffle=True, frame_size=(128,128)):
+    def __init__(self, num_frames=5, stride=1, dir='/media/jer/data/bouncing_ball_1000_1/test1_bouncing_ball', stage='raw', shuffle=True, frame_size=(224, 224)):
         self.stage = stage
         self.dir = os.path.join(dir, stage)
         self.num_frames = num_frames
@@ -27,9 +27,7 @@ class Panda(data.Dataset):
     def __getitem__(self, index):
         # obtaining file paths
         frame_names = self.dataset[index][0]
-
-        jointdata = np.load(self.dataset[index][1])
-        jointdata = torch.from_numpy(jointdata).float()
+        act_names = self.dataset[index][1]
 
         # loading and formatting image
         frames=[]
@@ -59,11 +57,12 @@ class Panda(data.Dataset):
         frames = frames.detach()
         frames.requires_grad = False
 
-        # # concatenating SOS token,
-        # frames = torch.cat((self.SOS_token, frames), dim=0)
+        joints = np.load(act_names)
+        joints = torch.tensor(joints)
+        joints = joints.float()
+        joints = joints.flatten()
 
-        #  frames.shape: (seq_len + 1, dim_model)
-        return {'data':frames, 'y':jointdata}
+        return {'data':frames, 'y':joints}
 
     def __len__(self):
         return len(self.dataset)
@@ -83,10 +82,10 @@ class Panda(data.Dataset):
                 # (parent+index, name)
                 if ('video' in parent):
                     parent_index = parent.split('_')[-1]
-                    img_names.append((int(parent_index+file[-8:-4]), os.path.join(dir, file)))
+                    img_names.append((int(parent_index+file[-9:-4]), os.path.join(dir, file)))
                 if ('actions' in parent):
                     parent_index = parent.split('_')[-1]
-                    act_names.append((int(parent_index+file[-8:-4]), os.path.join(dir, file)))
+                    act_names.append((int(parent_index+file[-9:-4]), os.path.join(dir, file)))
 
         # sorting the names numerically. first 4 digits are folder and last 3 are file
         # img_ind = [x[0] for x in img_names]
@@ -108,16 +107,15 @@ class Panda(data.Dataset):
                         index_list.append(img_names[i+k*self.stride][0]) # getting frame i, i+self.stride, i+2*self.stride, ... (i+1)+self.stride, (i+1)+2*self.stride, ... etc
                         frame_names.append(img_names[i+k*self.stride][1])
 
-                    if (not np.all(np.diff(index_list) == 1) or index_list[-1] + 1 != img_names[i+k*self.stride+1][0]):
+                    if (not np.all(np.diff(index_list) == 1)):
                         # frames arent contiguous
-                        # we cant use the last sequence in a video because we need a label for the seq+1 action
                         continue
 
                     # list of lists of frame indices
                     indices.append(index_list)
 
                     # each element is a list of frame names with length num_frames and skipping frames according to stride
-                    dataset.append((frame_names, act_names[i+k*self.stride+1][1]))
+                    dataset.append((frame_names, act_names[i+k*self.stride][1]))
 
                     # print('frame_names: ', frame_names)
 
@@ -130,7 +128,7 @@ class Panda(data.Dataset):
 
 
 if __name__ == '__main__':
-    dataset = Panda(num_frames=5, stride=1, dir='/home/jcollins90/vroom/data/PandaPickAndPlace-v1/data', stage='train', shuffle=True)
+    dataset = Panda(num_frames=5, stride=1, dir='PandaPickAndPlace-v1/data', stage='train', shuffle=True)
 
     for i in range(10):
         print('dir: ', dataset.dir)
