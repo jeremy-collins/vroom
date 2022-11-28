@@ -14,6 +14,7 @@ conda activate imitation
 python3 create_datastructure.py
 
 '''
+
 using_videos = False
 save_data = True
 delete_old_data = False
