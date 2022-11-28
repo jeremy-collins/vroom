@@ -202,11 +202,11 @@ if __name__ == "__main__":
 
     # torch.multiprocessing.set_start_method('spawn')
 
-    frames_per_clip = 1
+    frames_per_clip = 2
     frames_to_predict = 1 # must be <= frames_per_clip
     stride = 1 # number of frames to shift when loading clips
     batch_size = 32
-    epoch_ratio = 1 # to sample just a portion of the dataset
+    epoch_ratio = .05 # to sample just a portion of the dataset
     epochs = 200
     lr = 1e-3
     num_workers = 10
@@ -223,10 +223,10 @@ if __name__ == "__main__":
     trainer = TrainerBC(l2_weight=l2_weight, ent_weight=ent_weight)
 
     if (args.dataset == 'roboturk'):
-        model = BC_custom(input_size=26, output_size=4, net_arch=[32,32])
+        model = BC_custom(input_size=25, output_size=4, net_arch=[32,32], extractor='lstm')
         # model = SimpleMLP(input_size=26, output_size=4, net_arch=[64,128,128,64])
     elif (args.dataset == 'panda_img'):
-        model = BC_custom(input_size=64, output_size=4, net_arch=[32,32], cnn=True)
+        model = BC_custom(input_size=64, output_size=4, net_arch=[32,32], extractor='cnn')
     opt = optim.Adam(model.parameters(), lr=lr)
     try:
         model.load_state_dict(torch.load('./checkpoints/model_{}.pt'.format(args.name)))

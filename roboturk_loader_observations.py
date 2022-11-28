@@ -44,8 +44,9 @@ class RoboTurkObs(data.Dataset):
         # this is for loading observation spaces
         # np.random.seed(0)
         for obs in obs_names:
-            dat = np.load(obs, allow_pickle=True).item()
-            dat = np.concatenate([x.flatten() for x in dat.values()])
+            dat = np.load(obs)
+            # dat = np.load(obs, allow_pickle=True).item()
+            # dat = np.concatenate([x.flatten() for x in dat.values()])
             # dat = np.arange(0, 26) + np.random.randint(0, 1000) # testing
             # dat = np.arange(0, 26) + np.random.choice(np.array([100,900])) # testing
             # dat = (dat - self.mean_x)/self.stdev_x
