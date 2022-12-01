@@ -18,6 +18,9 @@ from utils import Utils
 from roboturk_loader_observations import RoboTurkObs
 from panda_loader_lstm import Panda
 
+# python trainer_bc.py --folder <data folder> --name <name of checkpoint file> --dataset <roboturk for lstm, panda_img for images> --save_best True
+# python trainer_bc.py --folder data/PandaPickAndPlace-v1/data --name pandmagic --dataset panda_img --save_best True
+
 class TrainerBC():
     def __init__(self, ent_weight=0, l2_weight=0):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
