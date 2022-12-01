@@ -5,6 +5,7 @@ from functools import partial
 import numpy as np
 
 from lstm import ShallowRegressionLSTM
+from cnns import MAGICALCNN
 
 class BC_MLP(nn.Module):
     def __init__(self, input_size, output_size, net_arch):
@@ -44,7 +45,6 @@ class BC_CNN(nn.Module):
         )
 
     def forward(self, X):
-        print(X.shape)
         out = self.layers(X)
 
         return out
@@ -71,10 +71,14 @@ class BC_custom(nn.Module):
                 param.requires_grad = True
         elif (self.extractor == 'cnn2'):
             self.extract_features = BC_CNN(self.input_size)
+        elif (self.extractor == 'magicalcnn'):
+            self.extract_features = MAGICALCNN(input_channels=3)
         elif (self.extractor == 'lstm'):
             self.extract_features = ShallowRegressionLSTM(self.input_size, self.input_size, 32, 2)
         elif (self.extractor == 'flatten'):
             self.extract_features = nn.Flatten() # this can be a CNN for images
+        else: 
+            print('extractor {} not recognized'.format(self.extractor))
 
         self.action_net = nn.Linear(net_arch[-1], self.output_size)
         self.value_net = nn.Linear(net_arch[-1], 1)

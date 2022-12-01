@@ -207,10 +207,10 @@ if __name__ == "__main__":
     frame_size = (96, 96)
     stride = 1 # number of frames to shift when loading clips
     batch_size = 32
-    epoch_ratio = .001 # to sample just a portion of the dataset
+    epoch_ratio = .1 # to sample just a portion of the dataset
     epochs = 200
     lr = 1e-3
-    num_workers = 10
+    num_workers = 12
 
     dim_model = 2048
     num_heads = 8
@@ -218,8 +218,8 @@ if __name__ == "__main__":
     num_decoder_layers = 4
     dropout_p = 0
 
-    l2_weight = 1e-8
-    ent_weight = 0
+    l2_weight = 1e-6
+    ent_weight = 1e-3
 
     trainer = TrainerBC(l2_weight=l2_weight, ent_weight=ent_weight)
 
@@ -227,7 +227,7 @@ if __name__ == "__main__":
         model = BC_custom(input_size=25, output_size=4, net_arch=[32,32], extractor='lstm')
         # model = SimpleMLP(input_size=26, output_size=4, net_arch=[64,128,128,64])
     elif (args.dataset == 'panda_img'):
-        model = BC_custom(input_size=2048, output_size=4, net_arch=[32,32], extractor='cnn2')
+        model = BC_custom(input_size=128, output_size=4, net_arch=[32,32], extractor='magicalcnn')
     opt = optim.Adam(model.parameters(), lr=lr)
     try:
         model.load_state_dict(torch.load('./checkpoints/model_{}.pt'.format(args.name)))
