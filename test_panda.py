@@ -58,12 +58,12 @@ def test_env(modelfile, modeltype, frame_size=(96,96), frames_per_clip=1):
     model = model.to(device)
     # Enjoy trained agent
     episode_reward = 0
-    X_seq = []
     # for i in range(0, frames_per_clip):
     #     X_seq.append(torch.zeros(25))
     obs = env.reset()
 
     reward_list = []
+    X_seq = reset_seq(frames_per_clip)
     for i in range(5000):
         X = copy.deepcopy(obs)
         X = np.concatenate((X['achieved_goal'], X['desired_goal'], X['observation']))
@@ -101,6 +101,7 @@ def test_env(modelfile, modeltype, frame_size=(96,96), frames_per_clip=1):
             episode_reward = 0
             print("reset")
             obs = env.reset()
+            X_seq = reset_seq(frames_per_clip)
 
             #time.sleep(1/30)
 
@@ -108,6 +109,13 @@ def test_env(modelfile, modeltype, frame_size=(96,96), frames_per_clip=1):
     print('num trials: {}'.format(len(reward_list)))
     print('number successes: {}'.format(len(reward_list) - np.sum(np.array(reward_list) == -50.0)))
     env.close()
+
+def reset_seq(num_frames):
+    X_seq = []
+    for i in range(0, num_frames):
+        X_seq.append(torch.zeros(25).float())
+
+    return X_seq
 
 frame_size = (96, 96)
 frames_per_clip = 5

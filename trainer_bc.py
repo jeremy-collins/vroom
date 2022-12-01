@@ -205,7 +205,7 @@ if __name__ == "__main__":
 
     # torch.multiprocessing.set_start_method('spawn')
 
-    frames_per_clip = 1
+    frames_per_clip = 5
     frames_to_predict = 1 # must be <= frames_per_clip
     frame_size = (96, 96)
     stride = 1 # number of frames to shift when loading clips

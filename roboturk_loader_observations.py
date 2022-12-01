@@ -44,7 +44,10 @@ class RoboTurkObs(data.Dataset):
         # this is for loading observation spaces
         # np.random.seed(0)
         for obs in obs_names:
-            dat = np.load(obs)
+            if (obs == 0):
+                dat = np.zeros(25)
+            else:
+                dat = np.load(obs)
             # dat = np.load(obs, allow_pickle=True).item()
             # dat = np.concatenate([x.flatten() for x in dat.values()])
             # dat = np.arange(0, 26) + np.random.randint(0, 1000) # testing
@@ -123,7 +126,7 @@ class RoboTurkObs(data.Dataset):
 
         # indices = [x[0] for x in obs_names]
 
-        # # for i in range(0, len(obs_names), self.num_frames): # for each sequence of frames
+        # # for i in range(0, len(obs_namesobs_anmes), self.num_frames): # for each sequence of frames
         # for i in range(0, len(obs_names) - self.num_frames, self.num_frames): # for each sequence
         #     index_list = []
         #     frame_names = []
@@ -139,6 +142,9 @@ class RoboTurkObs(data.Dataset):
             frame_names = []
             for j in range(self.stride): # don't miss the skipped frames from the stride
                 if i % self.stride == j:
+                    if (str(obs_names[i][0])[-5:] == '00000'):
+                        self.append_sos(dataset, indices, obs_names, act_names, i)
+
                     for k in range(self.num_frames): # for each sequence
                         index_list.append(obs_names[i+k*self.stride][0]) # getting frame i, i+self.stride, i+2*self.stride, ... (i+1)+self.stride, (i+1)+2*self.stride, ... etc
                         frame_names.append(obs_names[i+k*self.stride][1])
@@ -163,9 +169,23 @@ class RoboTurkObs(data.Dataset):
 
         return indices, dataset
 
+    def append_sos(self, dataset, indices, obs_names, act_names, ind):
+        # add sequences to the dataset with zero tokens before the start of the solve
+        # ind: index of actual start of sequence
+        for i in range(0, self.num_frames - 1):
+            index_list = [0]*(self.num_frames - i - 1)
+            frame_names = [0]*(self.num_frames - i - 1)
+            pad_len = len(frame_names)
+            for j in range(0, self.num_frames - pad_len):
+                index_list.append(obs_names[ind+j][0])
+                frame_names.append(obs_names[ind+j][1])
+            act_name = act_names[ind+j][1]
+
+            dataset.append((frame_names, act_name))
+            indices.append(index_list)
 
 if __name__ == '__main__':
-    dataset = RoboTurkObs(num_frames=20, stride=1, dir='PandaPickAndPlace-v1/data', stage='train', shuffle=True)
+    dataset = RoboTurkObs(num_frames=2, stride=1, dir='PandaPickAndPlace-v1/data', stage='train', shuffle=True)
     # dataset = RoboTurk(num_frames=5, stride=1, dir='/media/jer/Crucial X6/data/RoboTurk_videos/bins-Bread', stage='train', shuffle=True)
     # test_sampler = RandomSampler(dataset, replacement=False, num_samples=int(len(dataset) * 0.01))
     test_loader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False, num_workers=0)
