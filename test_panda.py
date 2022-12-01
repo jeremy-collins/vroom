@@ -49,13 +49,13 @@ models_dir = "my_models/"+equation+"/"+environment #+"/"+time #+"/"
 logdir = "logs/"+equation+"/"+environment #+"/"+time #+"/"
 
 
-model = BC_custom(input_size=25, output_size=4, net_arch=[32,32], extractor='flatten')
+model = BC_custom(input_size=25, output_size=4, net_arch=[32,32], extractor='lstm')
 
 # Load the trained agent
 print("Load the agent")
-model.load_state_dict(torch.load('checkpoints/model_pandmlp_2.pt'))
+model.load_state_dict(torch.load('checkpoints/model_pandlstm_2.pt'))
 # model = MlpPolicy.load('./results/11-23_06_28-200epochs/model.pt')
-# model = PPO.load('results/11-23_06_28-200epochs/model.zip', env=env)
+# model = PPO.load('/home/alanhesu/Documents/github/vroom/rl-baselines3-zoo-master/my_models/backup/PandaPickAndPlace-v1.pkl', env=env)
 
 
 # Enjoy trained agent
@@ -72,27 +72,29 @@ for i in range(1000):
     X = torch.from_numpy(X)
     X = X.float()
 
-    X_input = X # for flatten
+    # X_input = X # for flatten
 
-    # X_seq.append(X) # for lstm
-    # X_seq = X_seq[1:]
-    # X_input = torch.stack(X_seq, dim=0)
+    X_seq.append(X) # for lstm
+    X_seq = X_seq[1:]
+    X_input = torch.stack(X_seq, dim=0)
 
     X_input = X_input[None,:]
 
     action, _, _ = model(X_input)
     action = torch.squeeze(action, dim=0)
     action = action.detach().numpy()
+
     # action, _ = model.predict(obs)
     env.render()
     obs, rewards, dones, info = env.step(action)
     episode_reward = episode_reward + rewards
     if dones:
         print("episode_reward: ", episode_reward)
+        reward_list.append(episode_reward)
         episode_reward = 0
         print("reset")
         obs = env.reset()
-        reward_list.append(episode_reward)
+
         #time.sleep(1/30)
 
 print('average reward: {}'.format(np.mean(reward_list)))

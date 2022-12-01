@@ -27,6 +27,28 @@ class BC_MLP(nn.Module):
     def forward(self, X):
         return self.layers(X)
 
+class BC_CNN(nn.Module):
+    def __init__(self, output_size):
+        super().__init__()
+        self.output_size = output_size
+
+        self.layers = nn.Sequential(
+            nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.Flatten(),
+            nn.Linear(30976, self.output_size)
+        )
+
+    def forward(self, X):
+        print(X.shape)
+        out = self.layers(X)
+
+        return out
+
 class BC_custom(nn.Module):
     def __init__(self, input_size, output_size, net_arch, log_std_init=0, deterministic=False, ortho_init=True, extractor='flatten'):
         super().__init__()
@@ -47,6 +69,8 @@ class BC_custom(nn.Module):
             self.extract_features.fc = nn.Linear(2048, self.input_size)
             for param in self.extract_features.fc.parameters():
                 param.requires_grad = True
+        elif (self.extractor == 'cnn2'):
+            self.extract_features = BC_CNN(self.input_size)
         elif (self.extractor == 'lstm'):
             self.extract_features = ShallowRegressionLSTM(self.input_size, self.input_size, 32, 2)
         elif (self.extractor == 'flatten'):

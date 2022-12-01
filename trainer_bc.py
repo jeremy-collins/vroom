@@ -202,11 +202,12 @@ if __name__ == "__main__":
 
     # torch.multiprocessing.set_start_method('spawn')
 
-    frames_per_clip = 2
+    frames_per_clip = 1
     frames_to_predict = 1 # must be <= frames_per_clip
+    frame_size = (96, 96)
     stride = 1 # number of frames to shift when loading clips
     batch_size = 32
-    epoch_ratio = .05 # to sample just a portion of the dataset
+    epoch_ratio = .001 # to sample just a portion of the dataset
     epochs = 200
     lr = 1e-3
     num_workers = 10
@@ -217,7 +218,7 @@ if __name__ == "__main__":
     num_decoder_layers = 4
     dropout_p = 0
 
-    l2_weight = 1e-6
+    l2_weight = 1e-8
     ent_weight = 0
 
     trainer = TrainerBC(l2_weight=l2_weight, ent_weight=ent_weight)
@@ -226,7 +227,7 @@ if __name__ == "__main__":
         model = BC_custom(input_size=25, output_size=4, net_arch=[32,32], extractor='lstm')
         # model = SimpleMLP(input_size=26, output_size=4, net_arch=[64,128,128,64])
     elif (args.dataset == 'panda_img'):
-        model = BC_custom(input_size=64, output_size=4, net_arch=[32,32], extractor='cnn')
+        model = BC_custom(input_size=2048, output_size=4, net_arch=[32,32], extractor='cnn2')
     opt = optim.Adam(model.parameters(), lr=lr)
     try:
         model.load_state_dict(torch.load('./checkpoints/model_{}.pt'.format(args.name)))
@@ -244,11 +245,11 @@ if __name__ == "__main__":
         test_sampler = RandomSampler(test_dataset, replacement=False, num_samples=int(len(test_dataset) * epoch_ratio))
         test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False, sampler=test_sampler, num_workers=num_workers)
     elif args.dataset == 'panda_img':
-        train_dataset = Panda(num_frames=frames_per_clip, stride=stride, dir=args.folder, stage='train', shuffle=True, stack=False)
+        train_dataset = Panda(num_frames=frames_per_clip, stride=stride, dir=args.folder, stage='train', shuffle=True, frame_size=frame_size, stack=False)
         train_sampler = RandomSampler(train_dataset, replacement=False, num_samples=int(len(train_dataset) * epoch_ratio))
         train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=False, sampler=train_sampler, num_workers=num_workers)
 
-        test_dataset = Panda(num_frames=frames_per_clip, stride=stride, dir=args.folder, stage='test', shuffle=True, stack=False)
+        test_dataset = Panda(num_frames=frames_per_clip, stride=stride, dir=args.folder, stage='test', shuffle=True, frame_size=frame_size, stack=False)
         test_sampler = RandomSampler(test_dataset, replacement=False, num_samples=int(len(test_dataset) * epoch_ratio))
         test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False, sampler=test_sampler, num_workers=num_workers)
 
