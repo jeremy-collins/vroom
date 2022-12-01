@@ -20,19 +20,23 @@ from stable_baselines3.common.vec_env import DummyVecEnv
 import numpy as np
 from imitation.data.types import TrajectoryWithRew
 from imitation.algorithms import bc
+#from imitation.algorithms.bc import save_policy, reconstruct_policy
 from stable_baselines3.common.logger import configure
 import argparse
 from PIL import Image
+import torch as th
 
 #from stable_baselines.common.tf_layers import conv, linear, conv_to_fc, lstm
 # https://stable-baselines.readthedocs.io/en/master/guide/examples.html   examples
 # https://stable-baselines3.readthedocs.io/en/master/common/logger.html#logger  logs
+# https://github.com/minerllabs/basalt_competition_baseline_submissions/blob/master/basalt_baselines/bc.py
+
 '''
-cd /home/codysoccerman/Documents/classes/Fall_22/Deep_Learning/Project/rl-baselines3-zoo-master
+cd /home/cody/Documents/Project/rl-baselines3-zoo-master
 conda activate imitation
 python3 behavioral_cloning2.py
 
-cd /home/codysoccerman/Documents/classes/Fall_22/Deep_Learning/Project/rl-baselines3-zoo-master
+cd /home/cody/Documents/Project/rl-baselines3-zoo-master
 tensorboard --logdir my_models/behavioral_cloning
 http://localhost:6006/ 
 
@@ -53,11 +57,13 @@ def save_video(image_array, directory, name):
     video_writer.close()
     #print("video saved")
 
-def save_trained_model(model, directory, name):
+def save_trained_model(policy, directory, name):
     print("saving model")
     
-    model.save(directory+name+".zip")
-    model.save(directory+name+".pt")
+    th.save(policy, directory+name)
+    #policy.save(directory+name)
+    policy.save(directory+name+".zip")
+    policy.save(directory+name+".pt")
     #bc.save_policy(output_dir)
     #model.save_policy(output_dir+"model.pt")
     #model.save_model(output_dir) 
@@ -65,22 +71,25 @@ def save_trained_model(model, directory, name):
     
     #model.save_model(output_dir) #+"save/")
 
-    pickle.dump(model, open(directory+name+"_pickle.pkl", 'wb'))
+    pickle.dump(policy, open(directory+name+"_pickle.pkl", 'wb'))
     
     #with open(output_dir + 'loss.txt', 'w') as convert_file:
     #    convert_file.write(str(loss_array))
     print("model saved")
 
-def load_trained_model(model, checkpoint_path, name):
+def load_trained_model(checkpoint_path, name):
     print("loading model")
     #model = model.load(checkpoint_path + name + ".zip") #,env=env) # env=env
     #bc_trainer.policy = 
-    model = pickle.load(open(checkpoint_path + name + "_pickle.pkl",'rb')) #works for training
+    policy = bc.reconstruct_policy(checkpoint_path + name) # + ".zip")
+    #model = th.load(checkpoint_path + name + ".zip") #, map_location=th.device(get_device('auto')))
+
+    #model = pickle.load(open(checkpoint_path + name + "_pickle.pkl",'rb')) #works for training
 
     #model = PPO.load(models_dir+"/"+load_model_label+".zip",env=env)
     #model = MlpPolicy.load(model_path + environment,env=env)
     print("model loaded")
-    return model
+    return policy
 
 def load_expert_data(directory, name):
 
@@ -133,21 +142,21 @@ args = parser.parse_args()
 print (args.train_model)
 print (args.save_model)
 '''
-
-num_train_epochs = 1000
-train_model = False
-save_model = False
+# 30000 no vids
+num_train_epochs = 150
+train_model = True
+save_model = True
 test_model = True
 environment = "PandaPickAndPlace-v1"  #"PandaReach-v1" #"PandaPickAndPlace-v1"
 
 use_video = False
 model_path = "./my_models/behavioral_cloning/"
-load_checkpoint = True
-checkpoint_path = model_path +"11-23_06:28-200epochs/"
+load_checkpoint = False
+checkpoint_path = model_path +"Nov-30_02-37-20epochs/" #"11-29_17:43-20epochs/"
 
-time = datetime.datetime.now().strftime('%m-%d_%H:%M')
+time = datetime.datetime.now().strftime('%h-%d_%H-%M')
 output_dir = model_path+time+"-"+str(num_train_epochs)+"epochs/"
-
+print("output_dir: ", output_dir)
 
 
 train_expert = False
@@ -213,19 +222,24 @@ if use_video == True:
 if use_video == False:
     demonstrations, action_space, obs_space = load_expert_data(model_path, environment) 
 
-# define trainer settings
-new_logger = configure(output_dir, ["csv", "tensorboard"]) #["stdout", "csv", "tensorboard"])
-bc_trainer = bc.BC(observation_space=obs_space, action_space=action_space, demonstrations=demonstrations, device = "cuda", custom_logger = new_logger) #env.observation_space,  #env.action_space, transitions
-model = bc_trainer.policy
-# visualize bc
-#print("bc_trainer.policy: ", bc_trainer.policy)
-
 # Load the trained agent
 if load_checkpoint == True:
     # https://imitation.readthedocs.io/en/latest/experts/loading-experts.html
-    #model = load_trained_model(bc_trainer.policy, checkpoint_path, "model")
-    bc_trainer = pickle.load(open(checkpoint_path + "bc_trainer_pickle.pkl",'rb'))
+    policy = load_trained_model(checkpoint_path, "model")
+    #bc_trainer.train(n_epochs=num_train_epochs, progress_bar = True) 
+    #policy = th.load(test_policy_path, map_location=th.device(get_device('auto')))
+    #bc_trainer = pickle.load(open(checkpoint_path + "bc_trainer_pickle.pkl",'rb'))
     #bc_trainer.policy = model
+else:
+    policy = None
+
+# define trainer settings
+new_logger = configure(output_dir, ["csv", "tensorboard"]) #["stdout", "csv", "tensorboard"])
+bc_trainer = bc.BC(observation_space=obs_space, action_space=action_space, demonstrations=demonstrations, device = "cuda", custom_logger = new_logger, rng=None, policy =  policy) #env.observation_space,  #env.action_space, transitions
+
+# visualize bc
+print("bc_trainer.policy: ", bc_trainer.policy)
+
 
 # Train BC
 if train_model == True:
@@ -235,7 +249,7 @@ model = bc_trainer.policy
 # Save model
 if save_model == True:
     save_trained_model(bc_trainer.policy, output_dir, "model")
-    pickle.dump(bc_trainer, open(output_dir+"bc_trainer_pickle.pkl", 'wb'))
+    #pickle.dump(bc_trainer, open(output_dir+"bc_trainer_pickle.pkl", 'wb'))
 
 # Evaluate the agent
 eval_agent = False
@@ -248,7 +262,7 @@ if eval_agent == True:
 image_array = []
 combined_array = []
 gray_image_array = []
-num_videos = 20
+num_videos = 100
 if test_model == True:
     env = gym.make(environment) # "LunarLander-v2") # "CartPole-v1")
     print("env made")

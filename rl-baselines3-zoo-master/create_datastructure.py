@@ -6,22 +6,21 @@ import shutil
 import fnmatch
 import skvideo.io
 import json
-#from imitation.data.types import TrajectoryWithRew
+from imitation.data.types import TrajectoryWithRew
 
 '''
-cd /home/codysoccerman/Documents/classes/Fall_22/Deep_Learning/Project/rl-baselines3-zoo-master
+cd /home/cody/Documents/Project/rl-baselines3-zoo-master
 conda activate imitation
 python3 create_datastructure.py
 
 '''
-
 using_videos = False
 save_data = True
 delete_old_data = False
 behavioral_cloning = False
-dec_transformer = False
-vpt_actions = True
-n=1000
+dec_transformer = True
+vpt_actions = False
+n=30000
 
 
 dicts = {}
@@ -35,9 +34,9 @@ recording_path = "recording_data/" + env_name
 
 if delete_old_data == True and behavioral_cloning == False:
     #home/codysoccerman/.cache/huggingface/datasets/decision_transformer_gym_replay/PandaPickAndPlace-v1/
-    if os.path.exists("/home/codysoccerman/.cache/huggingface/datasets/decision_transformer_gym_replay/" + env_name + "/1.1.0"): #/datasets/decision_transformer_gym_replay/" + env_name):
+    if os.path.exists("/home/cody/.cache/huggingface/datasets/decision_transformer_gym_replay/" + env_name + "/1.1.0"): #/datasets/decision_transformer_gym_replay/" + env_name):
         print("exists")
-        shutil.rmtree("/home/codysoccerman/.cache/huggingface/datasets/decision_transformer_gym_replay/" + env_name + "/1.1.0")      #PandaPickAndPlace-v1/1.1.0")
+        shutil.rmtree("/home/cody/.cache/huggingface/datasets/decision_transformer_gym_replay/" + env_name + "/1.1.0")      #PandaPickAndPlace-v1/1.1.0")
         print("old files deleted")
     else:
         print("no files to delete")
@@ -50,7 +49,7 @@ low_res = 96 #96x96
 
 # no videos
 if using_videos == False and behavioral_cloning == True: 
-    print("creating BC datastructure")
+    print("creating non video BC datastructure")
     for idx in range(1,n+1):
         #print(idx)
         observations_array = np.load(recording_path + '/observations/observations_{}.npy'.format(idx), allow_pickle=True)
@@ -63,7 +62,7 @@ if using_videos == False and behavioral_cloning == True:
 
 
 if using_videos == False and dec_transformer == True: 
-    print("creating non video datastructure")
+    print("creating non video dec_transformer datastructure")
     for idx in range(1,n+1):
         #print(idx)
         observations_array = np.load(recording_path + '/observations/observations_{}.npy'.format(idx), allow_pickle=True)
@@ -71,7 +70,7 @@ if using_videos == False and dec_transformer == True:
         rewards_array = np.load(recording_path + '/rewards/rewards_{}.npy'.format(idx), allow_pickle=True)
         dones_array = np.load(recording_path + '/dones/dones_{}.npy'.format(idx), allow_pickle=True)
     
-        dicts = {"observations": observations_array, "acts": action_array, "rewards": rewards_array, "dones": dones_array}
+        dicts = {"observations": observations_array, "actions": action_array, "rewards": rewards_array, "dones": dones_array}
         dict_list.append(dicts)
 
 
@@ -151,7 +150,7 @@ if save_data == True and behavioral_cloning == True:
 
 
 if save_data == True and dec_transformer == True:
-    with open("decision_transformer_gym_replay/" + env_name + ".pkl", 'wb') as f:
+    with open("my_models/dec_transformer/" + env_name + ".pkl", 'wb') as f:
         pickle.dump(dict_list, f, protocol=pickle.HIGHEST_PROTOCOL)
     print("data saved")
 
