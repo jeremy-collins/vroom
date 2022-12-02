@@ -33,6 +33,8 @@ class Panda(data.Dataset):
         # loading and formatting image
         frames=[]
         for frame_name in frame_names:
+            if (frame_names == 0):
+                frame = np.zeros((self.frame_size[0], self.frame_size[1], 3), dtype=np.uint8)
             frame = cv2.imread(frame_name)
             frame = cv2.resize(frame, self.frame_size)
             # frame = self.transform(frame) # TODO: add transforms
@@ -86,10 +88,10 @@ class Panda(data.Dataset):
                 # (parent+index, name)
                 if ('video' in parent):
                     parent_index = parent.split('_')[-1]
-                    img_names.append((int(parent_index+file[-9:-4]), os.path.join(dir, file)))
+                    img_names.append((int(parent_index+file[-8:-4]), os.path.join(dir, file)))
                 if ('actions' in parent):
                     parent_index = parent.split('_')[-1]
-                    act_names.append((int(parent_index+file[-9:-4]), os.path.join(dir, file)))
+                    act_names.append((int(parent_index+file[-8:-4]), os.path.join(dir, file)))
 
         # sorting the names numerically. first 4 digits are folder and last 3 are file
         # img_ind = [x[0] for x in img_names]
@@ -107,6 +109,9 @@ class Panda(data.Dataset):
             frame_names = []
             for j in range(self.stride): # don't miss the skipped frames from the stride
                 if i % self.stride == j:
+                    if (str(img_names[i][0])[-4:] == '0000'):
+                        self.append_sos(dataset, indices, img_names, act_names, i)
+
                     for k in range(self.num_frames): # for each sequence
                         index_list.append(img_names[i+k*self.stride][0]) # getting frame i, i+self.stride, i+2*self.stride, ... (i+1)+self.stride, (i+1)+2*self.stride, ... etc
                         frame_names.append(img_names[i+k*self.stride][1])
@@ -130,9 +135,23 @@ class Panda(data.Dataset):
 
         return indices, dataset
 
+    def append_sos(self, dataset, indices, img_names, act_names, ind):
+        # add sequences to the dataset with zero tokens before the start of the solve
+        # ind: index of actual start of sequence
+        for i in range(0, self.num_frames - 1):
+            index_list = [0]*(self.num_frames - i - 1)
+            frame_names = [0]*(self.num_frames - i - 1)
+            pad_len = len(frame_names)
+            for j in range(0, self.num_frames - pad_len):
+                index_list.append(img_names[ind+j][0])
+                frame_names.append(img_names[ind+j][1])
+            act_name = act_names[ind+j][1]
+
+            dataset.append((frame_names, act_name))
+            indices.append(index_list)
 
 if __name__ == '__main__':
-    dataset = Panda(num_frames=5, stride=1, dir='PandaPickAndPlace-v1/data', stage='train', shuffle=True)
+    dataset = Panda(num_frames=5, stride=1, dir='data/PandaPickAndPlace-v1/data', stage='train', shuffle=True)
 
     for i in range(10):
         print('dir: ', dataset.dir)

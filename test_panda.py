@@ -80,6 +80,10 @@ def test_env(modelfile, modeltype, frame_size=(96,96), frames_per_clip=1):
         elif (modeltype == 'cnn' or modeltype == 'magicalcnn'):
             X_input = env.render('rgb_array')[:,:,:3]
             X_input = cv2.resize(X_input, frame_size)
+            # let's swap the channels
+            ch1 = X_input[:,:,0].copy()
+            X_input[:,:,0] = X_input[:,:,2]
+            X_input[:,:,2] = ch1
             X_input = torch.from_numpy(X_input)
             X_input = X_input.permute(2, 0, 1)
             X_input = X_input.float() / 255.0

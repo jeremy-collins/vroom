@@ -18,8 +18,8 @@ from utils import Utils
 from roboturk_loader_observations import RoboTurkObs
 from panda_loader_lstm import Panda
 
-# python trainer_bc.py --folder <data folder> --name <name of checkpoint file> --dataset <roboturk for lstm, panda_img for images> --save_best True
-# python trainer_bc.py --folder data/PandaPickAndPlace-v1/data --name pandmagic --dataset panda_img --save_best True
+# python trainer_bc.py --folder <data folder> --name <name of checkpoint file> --dataset <roboturk for lstm, panda_img for images> --save_best True --modeltype <model architecture>
+# python trainer_bc.py --folder data/PandaPickAndPlace-v1/data --name pandmagic --dataset panda_img --save_best True --modeltype magicalcnn
 
 class TrainerBC():
     def __init__(self, ent_weight=0, l2_weight=0):
@@ -200,6 +200,7 @@ if __name__ == "__main__":
     parser.add_argument('--save_best', type=bool, default=False) # only save best model
     parser.add_argument('--folder', type=str, required=True) # dataset location
     parser.add_argument('--name', type=str, required=True) # name of the model
+    parser.add_argument('--modeltype', type=str, required=True) # model architecture
 
     args = parser.parse_args()
 
@@ -212,7 +213,7 @@ if __name__ == "__main__":
     batch_size = 32
     epoch_ratio = .1 # to sample just a portion of the dataset
     epochs = 200
-    lr = 1e-3
+    lr = 1e-4
     num_workers = 12
 
     dim_model = 2048
@@ -226,11 +227,15 @@ if __name__ == "__main__":
 
     trainer = TrainerBC(l2_weight=l2_weight, ent_weight=ent_weight)
 
-    if (args.dataset == 'roboturk'):
+    if (args.modeltype == 'mlp'):
+        model = BC_custom(input_size=25, output_size=4, net_arch=[32,32], extractor='flatten')
+    elif (args.modeltype == 'lstm'):
         model = BC_custom(input_size=25, output_size=4, net_arch=[32,32], extractor='lstm')
-        # model = SimpleMLP(input_size=26, output_size=4, net_arch=[64,128,128,64])
-    elif (args.dataset == 'panda_img'):
+    elif (args.modeltype == 'magicalcnn'):
         model = BC_custom(input_size=128, output_size=4, net_arch=[32,32], extractor='magicalcnn')
+    elif (args.modeltype == 'magicalcnnlstm'):
+        model = BC_custom(input_size=128, output_size=4, net_arch=[32,32], extractor='magicalcnnlstm', freeze_cnn=False)
+    print(model)
     opt = optim.Adam(model.parameters(), lr=lr)
     try:
         model.load_state_dict(torch.load('./checkpoints/model_{}.pt'.format(args.name)))
@@ -248,11 +253,16 @@ if __name__ == "__main__":
         test_sampler = RandomSampler(test_dataset, replacement=False, num_samples=int(len(test_dataset) * epoch_ratio))
         test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False, sampler=test_sampler, num_workers=num_workers)
     elif args.dataset == 'panda_img':
-        train_dataset = Panda(num_frames=frames_per_clip, stride=stride, dir=args.folder, stage='train', shuffle=True, frame_size=frame_size, stack=False)
+        if (args.modeltype == 'magicalcnn'):
+            train_dataset = Panda(num_frames=frames_per_clip, stride=stride, dir=args.folder, stage='train', shuffle=True, frame_size=frame_size, stack=False)
+            test_dataset = Panda(num_frames=frames_per_clip, stride=stride, dir=args.folder, stage='test', shuffle=True, frame_size=frame_size, stack=False)
+        elif (args.modeltype == 'magicalcnnlstm'):
+            train_dataset = Panda(num_frames=frames_per_clip, stride=stride, dir=args.folder, stage='train', shuffle=True, frame_size=frame_size, stack=True)
+            test_dataset = Panda(num_frames=frames_per_clip, stride=stride, dir=args.folder, stage='test', shuffle=True, frame_size=frame_size, stack=True)
+
         train_sampler = RandomSampler(train_dataset, replacement=False, num_samples=int(len(train_dataset) * epoch_ratio))
         train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=False, sampler=train_sampler, num_workers=num_workers)
-
-        test_dataset = Panda(num_frames=frames_per_clip, stride=stride, dir=args.folder, stage='test', shuffle=True, frame_size=frame_size, stack=False)
+        
         test_sampler = RandomSampler(test_dataset, replacement=False, num_samples=int(len(test_dataset) * epoch_ratio))
         test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False, sampler=test_sampler, num_workers=num_workers)
 

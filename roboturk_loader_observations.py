@@ -185,7 +185,7 @@ class RoboTurkObs(data.Dataset):
             indices.append(index_list)
 
 if __name__ == '__main__':
-    dataset = RoboTurkObs(num_frames=2, stride=1, dir='PandaPickAndPlace-v1/data', stage='train', shuffle=True)
+    dataset = RoboTurkObs(num_frames=5, stride=1, dir='data/PandaPickAndPlace-v1/data', stage='train', shuffle=True)
     # dataset = RoboTurk(num_frames=5, stride=1, dir='/media/jer/Crucial X6/data/RoboTurk_videos/bins-Bread', stage='train', shuffle=True)
     # test_sampler = RandomSampler(dataset, replacement=False, num_samples=int(len(dataset) * 0.01))
     test_loader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False, num_workers=0)

@@ -78,6 +78,7 @@ class MAGICALCNN(nn.Module):
     def __init__(self,
                  input_channels,
                  representation_dim=128,
+                 fc_size=128,
                  use_bn=True,
                  use_ln=False,
                  dropout=None,
@@ -134,9 +135,9 @@ class MAGICALCNN(nn.Module):
         # another FC layer to make feature maps the right size
         fc_in_size = 1152
         fc_layers = [
-            nn.Linear(fc_in_size, 128 * w),
+            nn.Linear(fc_in_size, fc_size * w),
             ActivationCls(),
-            nn.Linear(128 * w, representation_dim),
+            nn.Linear(fc_size * w, representation_dim),
         ]
         if use_sn:
             # apply SN to linear layers too
