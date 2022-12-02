@@ -33,10 +33,11 @@ class Panda(data.Dataset):
         # loading and formatting image
         frames=[]
         for frame_name in frame_names:
-            if (frame_names == 0):
+            if (frame_name == 0):
                 frame = np.zeros((self.frame_size[0], self.frame_size[1], 3), dtype=np.uint8)
-            frame = cv2.imread(frame_name)
-            frame = cv2.resize(frame, self.frame_size)
+            else:
+                frame = cv2.imread(frame_name)
+                frame = cv2.resize(frame, self.frame_size)
             # frame = self.transform(frame) # TODO: add transforms
 
         #     # check decoding
