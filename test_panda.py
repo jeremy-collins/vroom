@@ -47,8 +47,12 @@ def test_env(modelfile, modeltype, frame_size=(96,96), frames_per_clip=1):
         model = BC_custom(input_size=128, output_size=4, net_arch=[32,32], extractor='magicalcnn')
     elif (modeltype == 'lstm'):
         model = BC_custom(input_size=25, output_size=4, net_arch=[32,32], extractor='lstm')
+    elif (args.modeltype == 'transformer'):
+        model = BC_custom(input_size=25, output_size=4, net_arch=[32,32], extractor='transformer', num_frames=frames_per_clip)
     elif (args.modeltype == 'magicalcnnlstm'):
         model = BC_custom(input_size=128, output_size=4, net_arch=[32,32], extractor='magicalcnnlstm', freeze_cnn=False)
+    elif (args.modeltype == 'magicalcnntransformer'):
+        model = BC_custom(input_size=128, output_size=4, net_arch=[32,32], extractor='magicalcnntransformer', freeze_cnn=False, num_frames=frames_per_clip)
     else:
         print('modeltype {} not supported'.format(modeltype))
 
@@ -78,12 +82,12 @@ def test_env(modelfile, modeltype, frame_size=(96,96), frames_per_clip=1):
 
         if (modeltype == 'mlp'):
             X_input = X # for flatten
-        elif (modeltype == 'lstm'):
+        elif (modeltype == 'lstm' or modeltype == 'transformer'):
             X_seq.append(X) # for lstm
             if (len(X_seq) > frames_per_clip):
                 X_seq.pop(0)
             X_input = torch.stack(X_seq, dim=0)
-        elif (modeltype == 'cnn' or modeltype == 'magicalcnn' or modeltype == 'magicalcnnlstm'):
+        elif (modeltype == 'cnn' or modeltype == 'magicalcnn' or modeltype == 'magicalcnnlstm' or modeltype == 'magicalcnntransformer'):
             X_input = env.render('rgb_array')[:,:,:3]
             X_input = cv2.resize(X_input, frame_size)
             # let's swap the channels
@@ -93,7 +97,7 @@ def test_env(modelfile, modeltype, frame_size=(96,96), frames_per_clip=1):
             X_input = torch.from_numpy(X_input)
             X_input = X_input.permute(2, 0, 1)
             X_input = X_input.float() / 255.0
-            if ( modeltype == 'magicalcnnlstm'):
+            if (modeltype == 'magicalcnnlstm' or modeltype == 'magicalcnntransformer'):
                 X_seq.append(X_input)
                 if (len(X_seq) > frames_per_clip):
                     X_seq.pop(0)
@@ -128,9 +132,9 @@ def test_env(modelfile, modeltype, frame_size=(96,96), frames_per_clip=1):
 def reset_seq(num_frames, modeltype, frame_size):
     X_seq = []
     for i in range(0, num_frames):
-        if (modeltype == 'lstm'):
+        if (modeltype == 'lstm' or modeltype == 'transformer'):
             X_seq.append(torch.zeros(25).float())
-        elif (modeltype == 'magicalcnnlstm'):
+        elif (modeltype == 'magicalcnnlstm' or modeltype == 'magicalcnntransformer'):
             X_seq.append(torch.zeros((3, frame_size[0], frame_size[1])).float())
 
     return X_seq

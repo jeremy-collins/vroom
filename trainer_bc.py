@@ -239,7 +239,7 @@ if __name__ == "__main__":
     elif (args.modeltype == 'magicalcnnlstm'):
         model = BC_custom(input_size=128, output_size=4, net_arch=[32,32], extractor='magicalcnnlstm', freeze_cnn=False)
     elif (args.modeltype == 'magicalcnntransformer'):
-        model = BC_custom(input_size=128, output_size=4, net_arch=[32,32], extractor='magicalcnntransformer', freeze_cnn=False)
+        model = BC_custom(input_size=128, output_size=4, net_arch=[32,32], extractor='magicalcnntransformer', freeze_cnn=False, num_frames=frames_per_clip)
     print(model)
     opt = optim.Adam(model.parameters(), lr=lr)
     try:
