@@ -18,8 +18,11 @@ from utils import Utils
 from roboturk_loader_observations import RoboTurkObs
 from panda_loader_lstm import Panda
 
+# for CNN + BC
 # python trainer_bc.py --folder <data folder> --name <name of checkpoint file> --dataset <roboturk for lstm, panda_img for images> --save_best True --modeltype <model architecture>
 # python trainer_bc.py --folder data/PandaPickAndPlace-v1/data --name pandmagic --dataset panda_img --save_best True --modeltype magicalcnn
+# for LSTM + BC
+# python trainer_bc.py --folder data/PandaPickAndPlace-v1/data --name pandlstm_.1epoch --dataset roboturk --save_best True --modeltype lstm
 
 class TrainerBC():
     def __init__(self, ent_weight=0, l2_weight=0):
@@ -206,7 +209,7 @@ if __name__ == "__main__":
 
     # torch.multiprocessing.set_start_method('spawn')
 
-    frames_per_clip = 1
+    frames_per_clip = 5
     frames_to_predict = 1 # must be <= frames_per_clip
     frame_size = (96, 96)
     stride = 1 # number of frames to shift when loading clips
