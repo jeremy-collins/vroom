@@ -6,6 +6,7 @@ import numpy as np
 
 from lstm import ShallowRegressionLSTM
 from cnns import MAGICALCNN
+from ili_transformer.transformer_timeseries import TimeSeriesTransformer
 
 class BC_MLP(nn.Module):
     def __init__(self, input_size, output_size, net_arch):
@@ -49,7 +50,7 @@ class BC_CNN(nn.Module):
 
         return out
 
-class MagicalCNNLSTM(nn.Module):
+class MagicalCNNSeq(nn.Module):
     def __init__(self,
                 input_channels,
                 fc_size,
@@ -57,7 +58,10 @@ class MagicalCNNLSTM(nn.Module):
                 output_size,
                 hidden_units,
                 num_layers,
-                freeze_cnn=True):
+                freeze_cnn=True,
+                modeltype='lstm',
+                num_frames=5,
+                n_heads=2):
         super().__init__()
         self.input_channels = input_channels
         self.fc_size = fc_size
@@ -66,6 +70,7 @@ class MagicalCNNLSTM(nn.Module):
         self.hidden_units = hidden_units
         self.num_layers = num_layers
         self.freeze_cnn = freeze_cnn
+        self.modeltype = modeltype
 
         self.cnn = MAGICALCNN(input_channels=input_channels, fc_size=fc_size, representation_dim=representation_dim)
         if (freeze_cnn):
@@ -79,11 +84,16 @@ class MagicalCNNLSTM(nn.Module):
                 param.requires_grad = False
         else:
             print('not freezing cnn weights')
-        self.lstm = ShallowRegressionLSTM(input_size=representation_dim, output_size=output_size, hidden_units=hidden_units, num_layers=num_layers)
+        if (modeltype == 'lstm'):
+            self.lstm = ShallowRegressionLSTM(input_size=representation_dim, output_size=output_size, hidden_units=hidden_units, num_layers=num_layers)
+        elif (modeltype == 'transformer'):
+            self.lstm = TimeSeriesTransformer(input_size=representation_dim, dec_seq_len=num_frames, dim_val=hidden_units,
+                                            n_encoder_layers=1, n_decoder_layers=1, n_heads=n_heads, dim_feedforward_encoder=32,
+                                            dim_feedforward_decoder=32, num_predicted_features=output_size, batch_first=True)
 
     def forward(self, X):
         b, t, c, h, w = X.shape
-        # combine the batch and sequence dimensions to pass into cnn first, then split them back out for lstm
+        # combine the batch and sequence dimensions to pass into cnn first, then split them back out for sequence layer
         X = torch.reshape(X, (b*t, c, h, w))
         X = self.cnn(X)
         X = torch.reshape(X, (b, t, self.representation_dim))
@@ -92,7 +102,16 @@ class MagicalCNNLSTM(nn.Module):
         return out
 
 class BC_custom(nn.Module):
-    def __init__(self, input_size, output_size, net_arch, log_std_init=0, deterministic=False, ortho_init=True, extractor='flatten', freeze_cnn=True):
+    def __init__(self,
+                input_size,
+                output_size,
+                net_arch,
+                log_std_init=0,
+                deterministic=False,
+                ortho_init=True,
+                extractor='flatten',
+                freeze_cnn=True,
+                num_frames=5):
         super().__init__()
         self.input_size = input_size
         self.output_size = output_size
@@ -100,6 +119,7 @@ class BC_custom(nn.Module):
         self.deterministic = deterministic
         self.ortho_init = ortho_init
         self.extractor = extractor
+        self.num_frames = num_frames
 
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -116,10 +136,19 @@ class BC_custom(nn.Module):
         elif (self.extractor == 'magicalcnn'):
             self.extract_features = MAGICALCNN(input_channels=3, fc_size=128)
         elif (self.extractor == 'magicalcnnlstm'):
-            self.extract_features = MagicalCNNLSTM(input_channels=3, fc_size=128, representation_dim=self.input_size,
-                                                    output_size=self.input_size, hidden_units=32, num_layers=2, freeze_cnn=freeze_cnn)
+            self.extract_features = MagicalCNNSeq(input_channels=3, fc_size=128, representation_dim=self.input_size,
+                                                    output_size=self.input_size, hidden_units=32, num_layers=2, freeze_cnn=freeze_cnn,
+                                                    modeltype='lstm')
+        elif (self.extractor == 'magicalcnntransformer'):
+            self.extract_features = MagicalCNNSeq(input_channels=3, fc_size=128, representation_dim=self.input_size,
+                                                    output_size=self.input_size, hidden_units=32, num_layers=2, freeze_cnn=freeze_cnn,
+                                                    modeltype='transformer', num_frames=num_frames, n_heads=2)
         elif (self.extractor == 'lstm'):
             self.extract_features = ShallowRegressionLSTM(self.input_size, self.input_size, 32, 2)
+        elif (self.extractor == 'transformer'):
+            self.extract_features = TimeSeriesTransformer(input_size=self.input_size, dec_seq_len=num_frames, dim_val=32,
+                                                            n_encoder_layers=1, n_decoder_layers=1, n_heads=2, dim_feedforward_encoder=32,
+                                                            dim_feedforward_decoder=32, num_predicted_features=self.input_size, batch_first=True)
         elif (self.extractor == 'flatten'):
             self.extract_features = nn.Flatten() # this can be a CNN for images
         else: 

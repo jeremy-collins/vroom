@@ -191,10 +191,8 @@ class TimeSeriesTransformer(nn.Module):
 
         """
 
-        #print("From model.forward(): Size of src as given to forward(): {}".format(src.size()))
-        #print("From model.forward(): tgt size = {}".format(tgt.size()))
-
-        tgt = src[:,-1,:].unsqueeze(1).to(self.device)
+        # tgt = src[:,-1,:].unsqueeze(1).to(self.device)
+        tgt = src.clone().to(self.device)
 
         src_mask = generate_square_subsequent_mask(
             dim1=self.dec_seq_len,
@@ -243,7 +241,8 @@ class TimeSeriesTransformer(nn.Module):
         #print("From model.forward(): decoder_output shape after decoder: {}".format(decoder_output.shape))
 
         # Pass through linear mapping
-        decoder_output = self.linear_mapping(decoder_output) # shape [batch_size, target seq len]
+        decoder_output = self.linear_mapping(decoder_output[:,-1,:]) # shape [batch_size, target seq len]
         #print("From model.forward(): decoder_output size after linear_mapping = {}".format(decoder_output.size()))
 
         return decoder_output
+

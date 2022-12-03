@@ -206,7 +206,7 @@ if __name__ == "__main__":
 
     # torch.multiprocessing.set_start_method('spawn')
 
-    frames_per_clip = 5
+    frames_per_clip = 1
     frames_to_predict = 1 # must be <= frames_per_clip
     frame_size = (96, 96)
     stride = 1 # number of frames to shift when loading clips
@@ -216,11 +216,12 @@ if __name__ == "__main__":
     lr = 1e-4
     num_workers = 12
 
-    dim_model = 2048
-    num_heads = 8
-    num_encoder_layers = 4
-    num_decoder_layers = 4
-    dropout_p = 0
+    # this stuff isn't being used
+    # dim_model = 2048
+    # num_heads = 8
+    # num_encoder_layers = 4
+    # num_decoder_layers = 4
+    # dropout_p = 0
 
     l2_weight = 1e-6
     ent_weight = 1e-3
@@ -231,10 +232,14 @@ if __name__ == "__main__":
         model = BC_custom(input_size=25, output_size=4, net_arch=[32,32], extractor='flatten')
     elif (args.modeltype == 'lstm'):
         model = BC_custom(input_size=25, output_size=4, net_arch=[32,32], extractor='lstm')
+    elif (args.modeltype == 'transformer'):
+        model = BC_custom(input_size=25, output_size=4, net_arch=[32,32], extractor='transformer', num_frames=frames_per_clip)
     elif (args.modeltype == 'magicalcnn'):
         model = BC_custom(input_size=128, output_size=4, net_arch=[32,32], extractor='magicalcnn')
     elif (args.modeltype == 'magicalcnnlstm'):
         model = BC_custom(input_size=128, output_size=4, net_arch=[32,32], extractor='magicalcnnlstm', freeze_cnn=False)
+    elif (args.modeltype == 'magicalcnntransformer'):
+        model = BC_custom(input_size=128, output_size=4, net_arch=[32,32], extractor='magicalcnntransformer', freeze_cnn=False)
     print(model)
     opt = optim.Adam(model.parameters(), lr=lr)
     try:
@@ -256,7 +261,7 @@ if __name__ == "__main__":
         if (args.modeltype == 'magicalcnn'):
             train_dataset = Panda(num_frames=frames_per_clip, stride=stride, dir=args.folder, stage='train', shuffle=True, frame_size=frame_size, stack=False)
             test_dataset = Panda(num_frames=frames_per_clip, stride=stride, dir=args.folder, stage='test', shuffle=True, frame_size=frame_size, stack=False)
-        elif (args.modeltype == 'magicalcnnlstm'):
+        elif (args.modeltype == 'magicalcnnlstm' or args.modeltype == 'magicalcnntransformer'):
             train_dataset = Panda(num_frames=frames_per_clip, stride=stride, dir=args.folder, stage='train', shuffle=True, frame_size=frame_size, stack=True)
             test_dataset = Panda(num_frames=frames_per_clip, stride=stride, dir=args.folder, stage='test', shuffle=True, frame_size=frame_size, stack=True)
 
@@ -277,6 +282,10 @@ if __name__ == "__main__":
                 torch.save(model.state_dict(), './checkpoints/model_' + args.name + '.pt')
                 print('model saved as model_' + str(args.name) + '.pt')
             epoch += 1
+
+            if (epoch % 10 == 0): # save this every so often
+                torch.save(model.state_dict(), './checkpoints/model_' + args.name + '_' + str(epoch) + '.pt')
+                print('model saved as model_' + str(args.name) + '_' + str(epoch) + '.pt')
 
             trainer.writer.add_scalar("Loss/train", train_loss_list[0], epoch)
             trainer.writer.add_scalar("Loss/validation", validation_loss_list[0], epoch)
