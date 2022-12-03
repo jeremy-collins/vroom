@@ -24,6 +24,8 @@ import cv2
 from bc_mlp import BC_custom
 from ili_transformer.transformer_timeseries import TimeSeriesTransformer
 
+# python test_panda.py --modelfile checkpoints/model_pandmagic_lr1e-4_.1epochratio.pt --modeltype magicalcnn
+
 '''
 cd /home/codysoccerman/Documents/classes/Fall_22/Deep_Learning/Project/rl-baselines3-zoo-master
 conda activate assistive
