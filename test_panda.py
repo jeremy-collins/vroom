@@ -76,7 +76,7 @@ def test_env(modelfile, modeltype, frame_size=(96,96), frames_per_clip=1):
 
     reward_list = []
     X_seq = reset_seq(frames_per_clip, modeltype, frame_size)
-    for i in range(5000):
+    for i in range(10000):
         X = copy.deepcopy(obs)
         X = np.concatenate((X['achieved_goal'], X['desired_goal'], X['observation']))
         X = torch.from_numpy(X)
@@ -113,14 +113,14 @@ def test_env(modelfile, modeltype, frame_size=(96,96), frames_per_clip=1):
         action = action.detach().cpu().numpy()
 
         # action, _ = model.predict(obs)
-        env.render()
+        # env.render()
         obs, rewards, dones, info = env.step(action)
         episode_reward = episode_reward + rewards
         if dones:
-            print("episode_reward: ", episode_reward)
+            # print("episode_reward: ", episode_reward)
             reward_list.append(episode_reward)
             episode_reward = 0
-            print("reset")
+            # print("reset")
             obs = env.reset()
             X_seq = reset_seq(frames_per_clip, modeltype, frame_size)
 

@@ -25,12 +25,12 @@ from panda_loader_lstm import Panda
 # python trainer_bc.py --folder data/PandaPickAndPlace-v1/data --name pandlstm_.1epoch --dataset roboturk --save_best True --modeltype lstm
 
 class TrainerBC():
-    def __init__(self, ent_weight=0, l2_weight=0):
+    def __init__(self, ent_weight=0, l2_weight=0, logname=None):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print('device: ', self.device)
         self.ent_weight = ent_weight
         self.l2_weight = l2_weight
-        self.writer = SummaryWriter()
+        self.writer = SummaryWriter(log_dir=os.path.join('runs', logname))
         # self.utils = Utils()
         # self.utils.init_resnet()
         # self.utils.init_resnet(freeze=False)
@@ -209,12 +209,15 @@ if __name__ == "__main__":
 
     # torch.multiprocessing.set_start_method('spawn')
 
-    frames_per_clip = 5
+    if ('lstm' in args.modeltype or 'transformer' in args.modeltype):
+        frames_per_clip = 5
+    else:
+        frames_per_clip = 1
     frames_to_predict = 1 # must be <= frames_per_clip
     frame_size = (96, 96)
     stride = 1 # number of frames to shift when loading clips
     batch_size = 32
-    epoch_ratio = .1 # to sample just a portion of the dataset
+    epoch_ratio = .01 # to sample just a portion of the dataset
     epochs = 200
     lr = 1e-4
     num_workers = 12
@@ -229,7 +232,7 @@ if __name__ == "__main__":
     l2_weight = 1e-6
     ent_weight = 1e-3
 
-    trainer = TrainerBC(l2_weight=l2_weight, ent_weight=ent_weight)
+    trainer = TrainerBC(l2_weight=l2_weight, ent_weight=ent_weight, logname=args.name)
 
     if (args.modeltype == 'mlp'):
         model = BC_custom(input_size=25, output_size=4, net_arch=[32,32], extractor='flatten')
